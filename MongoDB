@@ -7,3 +7,13 @@ app.post("/signup", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+app.post("/signup", async (req, res) => {
+  try {
+    const user = new User(req.body);
+    await user.save();
+    res.json({ message: "User created successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
