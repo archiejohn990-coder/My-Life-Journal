@@ -480,7 +480,7 @@ html {
         <h1>My Life Journal</h1>
       </div>
       <div class="hint" style="margin-top:6px;">
-        Private journal + encryption on this browser <span class="kbd" title="Security note">WebCrypto</span>
+        Private journal safe place for everyone<span class="kbd" title="Security note">Journal</span>
       </div>
 
       <div class="tab-switch" role="tablist" aria-label="Login and Sign Up">
@@ -634,7 +634,7 @@ html {
             <div class="card" style="border-left: 6px solid var(--primary);">
               <h3 id="entryCount">0 entries</h3>
               <div class="muted" style="margin-top:6px;">
-                Your diary is encrypted at rest on this browser. Keep your password safe.
+                Your diary is encrypted. Keep your password safe.
               </div>
               <div class="chips" style="margin-top:12px;">
                 <span class="chip"><i class="fas fa-key"></i> <b>Encrypted</b> AES‑GCM</span>
@@ -849,7 +849,7 @@ html {
               </div>
 
               <div class="hint" style="text-align:left; margin-top:10px;">
-                Wipe removes your account + diary from this browser only.
+                Wipe removes your account + diary.
               </div>
             </div>
           </div>
@@ -1107,7 +1107,7 @@ async function handleRecovery(){
 
   const users = readUsers();
   const idx = users.findIndex(u => u.email === email && u.name.toLowerCase() === name.toLowerCase());
-  if(idx === -1) return toast("danger","Details mismatch","No matching account on this browser.");
+  if(idx === -1) return toast("danger","Details mismatch","No matching account.");
 
   if(newPass){
     const salt = bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
@@ -1159,7 +1159,7 @@ $("authForm").addEventListener("submit", async (e) => {
     if(pass.length < 8) return toast("warn","Weak password","Use at least 8 characters.");
 
     if(users.some(u => u.email === email)){
-      return toast("danger","User exists","That email is already registered on this browser.");
+      return toast("danger","User exists","That email is already registered.");
     }
 
     const kdfSalt = bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
@@ -1788,13 +1788,13 @@ function importData(event){
 async function wipeMyData(){
   const me = getUser();
   if(!me) return;
-  if(!confirm("This will delete your account + encrypted diary from this browser. Continue?")) return;
+  if(!confirm("This will delete your account + encrypted diary. Continue?")) return;
 
   let users = readUsers();
   users = users.filter(u => u.email !== me.email);
   writeUsers(users);
   localStorage.removeItem(LS_CURRENT);
-  toast("", "Deleted", "Your data was removed from this browser.");
+  toast("", "Deleted", "Your data was removed.");
   logout(false);
 }
 
