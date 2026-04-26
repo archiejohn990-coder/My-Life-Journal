@@ -463,4 +463,11 @@ document.addEventListener("DOMContentLoaded", () => {
   } catch(e) {
     console.log("Theme error:", e);
   }
-});
+
+  async function addFriend(userId, friendId) {
+  await fetch("/add-friend", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, friendId })
+  });
+}
