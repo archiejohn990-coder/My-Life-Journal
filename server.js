@@ -19,39 +19,16 @@ const MONGO_URL = "mongodb+srv://Archie:Archie1225@cluster0.7e4s845.mongodb.net/
 mongoose.connect(MONGO_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
 })
 .then(() => console.log("✅ Connected to MongoDB Atlas!"))
-.catch(err => {
-  console.error("❌ MongoDB Connection Error:", err);
-  // Don't exit, just log error - app will still serve static files
-  console.log("⚠️ Running in offline mode - database features unavailable");
-});
-
-// Handle connection events
-mongoose.connection.on('connected', () => {
-  console.log('✅ MongoDB connected successfully');
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('❌ MongoDB connection error:', err);
-});
-
-mongoose.connection.on('disconnected', () => {
-  console.log('⚠️ MongoDB disconnected, attempting to reconnect...');
-  setTimeout(() => {
-    mongoose.connect(MONGO_URL);
-  }, 5000);
-});
+.catch(err => console.error("❌ MongoDB Connection Error:", err));
 
 /* =========================
    SCHEMAS
 ========================= */
 
-// User Schema
 const userSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true, lowercase: true, index: true },
+  email: { type: String, required: true, unique: true, lowercase: true },
   name: { type: String, required: true },
   passwordHash: { type: String, required: true },
   pinHash: { type: String, required: true },
@@ -73,28 +50,23 @@ const userSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-// Shared Entry Schema
 const sharedEntrySchema = new mongoose.Schema({
-  from: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  to: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  fromEmail: { type: String, required: true, index: true },
-  toEmail: { type: String, required: true, index: true },
+  from: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  to: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  fromEmail: { type: String, required: true },
+  toEmail: { type: String, required: true },
   title: { type: String, default: "" },
   body: { type: String, default: "" },
   mood: { type: String, default: "" },
   date: { type: String, default: "" },
   image: { type: String, default: null },
   tags: [{ type: String }],
-  sharedAt: { type: Date, default: Date.now, index: true },
+  sharedAt: { type: Date, default: Date.now },
   read: { type: Boolean, default: false }
 });
 
 const User = mongoose.model("User", userSchema);
 const SharedEntry = mongoose.model("SharedEntry", sharedEntrySchema);
-
-/* =========================
-   HELPER FUNCTIONS
-========================= */
 
 function cleanUser(user) {
   return {
@@ -109,7 +81,7 @@ function cleanUser(user) {
 }
 
 /* =========================
-   AUTH ROUTES
+   API ROUTES
 ========================= */
 
 // Signup
@@ -134,7 +106,6 @@ app.post("/api/signup", async (req, res) => {
     });
     
     await user.save();
-    console.log(`✅ New user created: ${email}`);
     res.json(cleanUser(user));
     
   } catch (err) {
@@ -160,7 +131,6 @@ app.post("/api/login", async (req, res) => {
     user.lastSync = new Date();
     await user.save();
     
-    console.log(`✅ User logged in: ${email}`);
     res.json(cleanUser(user));
     
   } catch (err) {
@@ -169,7 +139,7 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// Update user data (sync across devices)
+// Update user
 app.post("/api/user/update", async (req, res) => {
   try {
     const { email, encryptedVault, photo, name } = req.body;
@@ -185,12 +155,7 @@ app.post("/api/user/update", async (req, res) => {
     user.lastSync = new Date();
     
     await user.save();
-    
-    console.log(`✅ User updated: ${email}`);
-    res.json({ 
-      message: "User updated",
-      user: cleanUser(user)
-    });
+    res.json({ message: "User updated", user: cleanUser(user) });
     
   } catch (err) {
     console.error("Update error:", err);
@@ -198,30 +163,7 @@ app.post("/api/user/update", async (req, res) => {
   }
 });
 
-// Get user by email (for friend search)
-app.post("/api/user/find", async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    res.json({
-      id: user._id,
-      email: user.email,
-      name: user.name,
-      photo: user.photo
-    });
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-/* =========================
-   SYNC ROUTES (Cross-Device)
-========================= */
-
-// Pull latest data from server
+// Sync pull
 app.post("/api/sync/pull", async (req, res) => {
   try {
     const { email } = req.body;
@@ -236,12 +178,11 @@ app.post("/api/sync/pull", async (req, res) => {
       lastSync: user.lastSync
     });
   } catch (err) {
-    console.error("Pull error:", err);
     res.status(500).json({ error: "Pull failed" });
   }
 });
 
-// Push local changes to server
+// Sync push
 app.post("/api/sync/push", async (req, res) => {
   try {
     const { email, encryptedVault } = req.body;
@@ -255,22 +196,13 @@ app.post("/api/sync/push", async (req, res) => {
     user.lastSync = new Date();
     await user.save();
     
-    console.log(`✅ Sync push from: ${email}`);
-    res.json({ 
-      message: "Changes pushed successfully",
-      lastSync: user.lastSync
-    });
+    res.json({ message: "Changes pushed successfully", lastSync: user.lastSync });
   } catch (err) {
-    console.error("Push error:", err);
     res.status(500).json({ error: "Push failed" });
   }
 });
 
-/* =========================
-   FRIEND ROUTES
-========================= */
-
-// Send friend request
+// Friend request
 app.post("/api/friends/request", async (req, res) => {
   try {
     const { userEmail, friendEmail } = req.body;
@@ -305,46 +237,10 @@ app.post("/api/friends/request", async (req, res) => {
     });
     await friend.save();
     
-    console.log(`✅ Friend request sent: ${userEmail} -> ${friendEmail}`);
     res.json({ message: "Friend request sent" });
     
   } catch (err) {
     console.error("Friend request error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// Accept friend request
-app.post("/api/friends/accept", async (req, res) => {
-  try {
-    const { userEmail, requestId } = req.body;
-    
-    const user = await User.findOne({ email: userEmail.toLowerCase() });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    
-    const request = user.friendRequests.id(requestId);
-    if (!request) {
-      return res.status(404).json({ error: "Request not found" });
-    }
-    
-    request.status = 'accepted';
-    
-    user.friends.push(request.from);
-    await user.save();
-    
-    const requester = await User.findById(request.from);
-    if (requester && !requester.friends.includes(user._id)) {
-      requester.friends.push(user._id);
-      await requester.save();
-    }
-    
-    console.log(`✅ Friend request accepted: ${userEmail}`);
-    res.json({ message: "Friend request accepted" });
-    
-  } catch (err) {
-    console.error("Accept friend error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -364,37 +260,11 @@ app.post("/api/friends/list", async (req, res) => {
     res.json({ friends: user.friends });
     
   } catch (err) {
-    console.error("Get friends error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
-// Get pending friend requests
-app.post("/api/friends/requests", async (req, res) => {
-  try {
-    const { userEmail } = req.body;
-    
-    const user = await User.findOne({ email: userEmail.toLowerCase() })
-      .populate('friendRequests.from', 'email name photo');
-    
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    
-    const pendingRequests = user.friendRequests.filter(req => req.status === 'pending');
-    res.json({ requests: pendingRequests });
-    
-  } catch (err) {
-    console.error("Get requests error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-/* =========================
-   SHARING ROUTES
-========================= */
-
-// Share entry with friend
+// Share entry
 app.post("/api/share", async (req, res) => {
   try {
     const { fromEmail, toEmail, title, body, mood, date, image, tags } = req.body;
@@ -424,9 +294,7 @@ app.post("/api/share", async (req, res) => {
     });
     
     await sharedEntry.save();
-    
-    console.log(`✅ Entry shared: ${fromEmail} -> ${toEmail}`);
-    res.json({ message: "Entry shared successfully", id: sharedEntry._id });
+    res.json({ message: "Entry shared successfully" });
     
   } catch (err) {
     console.error("Share error:", err);
@@ -434,7 +302,7 @@ app.post("/api/share", async (req, res) => {
   }
 });
 
-// Get shared entries (inbox)
+// Get shared inbox
 app.post("/api/shared/inbox", async (req, res) => {
   try {
     const { userEmail } = req.body;
@@ -445,48 +313,28 @@ app.post("/api/shared/inbox", async (req, res) => {
     res.json({ shared: sharedEntries });
     
   } catch (err) {
-    console.error("Get inbox error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
-// Mark shared entry as read
-app.post("/api/shared/mark-read", async (req, res) => {
-  try {
-    const { entryId } = req.body;
-    
-    await SharedEntry.findByIdAndUpdate(entryId, { read: true });
-    res.json({ message: "Entry marked as read" });
-    
-  } catch (err) {
-    console.error("Mark read error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-/* =========================
-   HEALTH CHECK
-========================= */
-
+// Health check
 app.get("/api/health", (req, res) => {
-  const dbStatus = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
-  res.json({ 
-    status: "ok", 
-    db: dbStatus,
-    timestamp: new Date().toISOString()
-  });
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 /* =========================
-   STATIC FILES & FRONTEND
+   STATIC FILES - Fixed for Express 4.x
 ========================= */
 
 // Serve static files from 'public' directory
 app.use(express.static(path.join(__dirname, "public")));
 
-// Serve index.html for all other routes (SPA support)
+// Catch-all route to serve index.html (for client-side routing)
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  // Don't interfere with API routes
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+  }
 });
 
 /* =========================
@@ -497,5 +345,4 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`\n🚀 Server running on http://localhost:${PORT}`);
   console.log(`📡 API available at http://localhost:${PORT}/api`);
   console.log(`📁 Frontend served from /public folder`);
-  console.log(`🔗 MongoDB: ${MONGO_URL.split('@')[1]?.split('?')[0] || 'Atlas'}`);
 });
