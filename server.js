@@ -1,117 +1,755 @@
-const express = require("express");
-const cors = require("cors");
-const path = require("path");
-const mongoose = require("mongoose");
-require("dotenv").config();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Life Journal</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root{
+      --primary:#10b981;
+      --primary2:#0ea5e9;
+      --danger:#ef4444;
+      --warn:#f59e0b;
+      --bg:#f1f5f9;
+      --card:#ffffff;
+      --sidebar:#0f172a;
+      --text:#0f172a;
+      --muted:#64748b;
+      --border:#e2e8f0;
+      --ring: rgba(16,185,129,.35);
+      --shadow: 0 10px 25px rgba(2,6,23,.08);
+      --shadow2: 0 18px 45px rgba(2,6,23,.18);
+      --radius: 18px;
+    }
+    [data-theme="dark"]{
+      --bg:#0b1220;
+      --card:#0f172a;
+      --sidebar:#070b14;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --border: rgba(148,163,184,.22);
+      --shadow: 0 10px 25px rgba(0,0,0,.28);
+      --shadow2: 0 18px 45px rgba(0,0,0,.45);
+      --ring: rgba(61, 233, 27, 0.28);
+    }
+    *{ box-sizing:border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; padding:0;}
+    body{ background:var(--bg); color:var(--text); min-height:100vh; transition: background 0.3s; }
+    button,a,input,textarea,select{ transition:.18s ease; }
+    .hidden{ display:none !important; }
+    .toast-wrap{ position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:10px; z-index:99999; pointer-events:none;}
+    .toast{
+      pointer-events:auto;
+      min-width:280px; max-width:360px;
+      background: color-mix(in oklab, var(--card) 92%, transparent);
+      border: 1px solid var(--border);
+      border-left: 6px solid var(--primary);
+      border-radius: 16px;
+      box-shadow: var(--shadow2);
+      padding: 12px;
+      display:flex; gap:10px; align-items:flex-start;
+      animation: pop .18s ease;
+      backdrop-filter: blur(10px);
+    }
+    .toast i{ margin-top:2px; color: var(--primary); }
+    .toast .t-title{ font-weight:900; margin-bottom:2px; }
+    .toast .t-msg{ color: var(--muted); font-size:.9rem; line-height:1.25; }
+    .toast .x{ margin-left:auto; border:none; background:transparent; cursor:pointer; color: var(--muted); padding:4px 6px; border-radius:10px; }
+    .toast.danger{ border-left-color: var(--danger); }
+    .toast.danger i{ color: var(--danger); }
+    @keyframes pop{ from{ transform:translateY(6px); opacity:.2;} to{ transform:translateY(0); opacity:1;} }
+    .auth{
+      display:flex; justify-content:center; align-items:center;
+      min-height:100vh;
+      background: radial-gradient(1200px 700px at 30% 20%, rgba(16,185,129,.25), transparent 55%),
+                  radial-gradient(1000px 700px at 70% 30%, rgba(14,165,233,.18), transparent 55%),
+                  var(--sidebar);
+      padding:24px;
+    }
+    .auth-card{
+      width:100%; max-width: 440px;
+      background: color-mix(in oklab, #ffffff 92%, transparent);
+      border-radius: 26px;
+      box-shadow: var(--shadow2);
+      padding: 24px 22px;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,.18);
+    }
+    [data-theme="dark"] .auth-card{
+      background: color-mix(in oklab, var(--card) 88%, transparent);
+      border: 1px solid rgba(148,163,184,.14);
+    }
+    .brand{ display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:10px; }
+    .brand i{ color: var(--primary); font-size: 2rem; }
+    .brand h1{ font-size: 1.55rem; }
+    .pillbtn{
+      border:none; cursor:pointer; border-radius:999px; padding:10px 12px;
+      background: rgba(255,255,255,.14); color: rgba(255,255,255,.9);
+      font-weight:800;
+    }
+    .tab-switch{ display:flex; background: #eef2f7; padding:6px; border-radius:14px; margin: 14px 0 10px; gap:6px; }
+    [data-theme="dark"] .tab-switch{ background: rgba(148,163,184,.14); }
+    .tab-switch button{ flex:1; border:none; background:transparent; padding:12px; border-radius:12px; cursor:pointer; font-weight:900; color: var(--muted); }
+    .tab-switch button.active{ background: var(--card); color: var(--primary); box-shadow: 0 2px 10px rgba(2,6,23,.10); }
+    .field{ margin-top:10px; text-align:left; }
+    .label{ font-size: .82rem; color: var(--muted); margin: 0 0 6px 2px; font-weight:600; }
+    .input{
+      width:100%; padding: 12px 14px;
+      border-radius:14px;
+      border: 1px solid var(--border);
+      outline:none;
+      background: var(--card);
+      color: var(--text);
+      font-size: 1rem;
+    }
+    .input:focus{ border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring); }
+    .btn{
+      width:100%;
+      margin-top:12px;
+      padding:14px;
+      border:none; border-radius:14px;
+      font-weight:900; cursor:pointer; color:white;
+      background: linear-gradient(135deg, var(--primary), #22c55e);
+      box-shadow: 0 4px 12px rgba(16,185,129,.25);
+    }
+    .btn:hover{ transform: translateY(-1px); filter: brightness(1.02); }
+    .captcha{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      background: color-mix(in oklab, var(--card) 90%, transparent);
+      border:1px solid var(--border);
+      border-radius:14px; padding: 12px; margin-top:10px;
+    }
+    .captcha-code{ font-weight: 950; letter-spacing: 5px; font-family: monospace; font-size: 1.2rem; }
+    .captcha button{
+      border:none; cursor:pointer; font-weight: 900;
+      background: color-mix(in oklab, var(--primary) 16%, transparent);
+      color: var(--primary);
+      padding: 8px 16px; border-radius: 12px;
+    }
+    .link{ color: var(--primary); font-weight: 900; cursor:pointer; text-decoration: underline; }
+    #app{ display:none; height:100vh; overflow:hidden;}
+    .layout{ display:flex; height:100vh; }
+    .sidebar{
+      width: 278px;
+      background: var(--sidebar);
+      color: white;
+      padding: 20px;
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .sidebar-logo{
+      display:flex; align-items:center; gap:10px;
+      color: var(--primary);
+      font-weight: 950;
+      font-size: 1.1rem;
+      padding: 10px;
+      border-radius: 14px;
+      cursor:pointer;
+    }
+    .sidebar-logo:hover{ background: rgba(255,255,255,.06); }
+    .nav a{
+      display:flex; align-items:center; gap:12px;
+      padding: 12px;
+      border-radius: 14px;
+      color: #94a3b8;
+      text-decoration:none;
+      cursor:pointer;
+      font-weight: 750;
+    }
+    .nav a:hover{ background: rgba(255,255,255,.06); color: #e2e8f0; }
+    .nav a.active{ background: rgba(255,255,255,.10); color:white; }
+    .spacer{ flex:1; }
+    .logout{ color: #fecaca !important; }
+    .main{ flex:1; padding: 26px; overflow-y:auto; }
+    .topbar{ display:flex; align-items:center; gap:12px; margin-bottom: 16px; flex-wrap:wrap; }
+    .hamburger{
+      display:none;
+      border:none; cursor:pointer;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      border-radius: 14px;
+      color: var(--text);
+    }
+    .pill{
+      display:flex; align-items:center; gap:10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 12px;
+    }
+    .pill img{ width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+    .pill .name{ font-weight: 950; }
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
+    }
+    .card h3{ margin-bottom: 12px; }
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn-inline{
+      padding: 10px 20px;
+      border-radius: 14px; border:none; cursor:pointer;
+      font-weight: 950; color: white;
+      background: linear-gradient(135deg, var(--primary), #22c55e);
+    }
+    .btn-ghost{
+      padding: 10px 20px;
+      border-radius: 14px; border: 1px solid var(--border);
+      cursor:pointer; font-weight: 950;
+      background: var(--card); color: var(--text);
+    }
+    .row{ display:flex; gap:12px; }
+    .row .field{ flex:1; }
+    .entry{ display:flex; justify-content:space-between; gap:14px; align-items:flex-start; }
+    .entry small{ color: var(--muted); display:block; margin-bottom: 6px; font-size:0.8rem; }
+    .entry p{ line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+    .entry h4{ font-size: 1.05rem; margin-bottom: 6px; }
+    .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top: 10px;}
+    .chip{
+      display:inline-flex; align-items:center; gap:6px;
+      background: color-mix(in oklab, var(--border) 18%, transparent);
+      border: 1px solid color-mix(in oklab, var(--border) 30%, transparent);
+      color: var(--muted);
+      font-size: .78rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    .entry-actions{ display:flex; gap:8px; }
+    .iconbtn{
+      border:none; cursor:pointer;
+      background: color-mix(in oklab, var(--border) 16%, transparent);
+      padding: 8px 12px;
+      border-radius: 12px;
+      color: var(--text);
+    }
+    .iconbtn:hover{ transform: translateY(-1px); background: color-mix(in oklab, var(--border) 30%, transparent); }
+    .thumb{ width: 96px; height: 72px; border-radius: 14px; object-fit: cover; margin-top: 8px; }
+    .modal-backdrop{
+      position: fixed; inset:0;
+      background: rgba(2,6,23,.75);
+      display:none;
+      align-items:center; justify-content:center;
+      padding: 18px;
+      z-index: 9999;
+    }
+    .modal{
+      width: 100%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: var(--card);
+      border-radius: 22px;
+      box-shadow: var(--shadow2);
+    }
+    .modal-head{
+      display:flex; justify-content:space-between; align-items:center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-body{ padding: 20px; }
+    .modal-foot{ padding: 16px 20px; display:flex; gap:10px; justify-content:flex-end; border-top: 1px solid var(--border); }
+    .preview{
+      border: 1px dashed var(--border);
+      padding: 12px;
+      border-radius: 16px;
+      background: color-mix(in oklab, var(--border) 10%, transparent);
+      min-height: 150px;
+    }
+    .button-row-center{ display:flex; justify-content:center; gap:12px; margin-top:12px; }
+    @media (max-width: 768px){
+      .sidebar{
+        position: fixed; top:0; left:0;
+        height: 100vh; transform: translateX(-105%);
+        z-index: 1000; width: 280px;
+      }
+      .sidebar.open{ transform: translateX(0); }
+      .drawer-backdrop{ display:none; position:fixed; inset:0; background: rgba(0,0,0,.5); z-index: 999; }
+      .drawer-backdrop.show{ display:block; }
+      .hamburger{ display:inline-flex; align-items:center; gap:8px; }
+      .grid{ grid-template-columns: 1fr; }
+      .row{ flex-direction: column; }
+    }
+    textarea.input{ min-height: 100px; resize: vertical; }
+    .kbd{
+      font-family: monospace;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: color-mix(in oklab, var(--border) 12%, transparent);
+      font-size: 0.75rem;
+    }
+    canvas{ width: 100%; height: 200px; border-radius: 16px; }
+    .team{ display:flex; justify-content:center; gap:20px; flex-wrap:wrap; margin-top:20px; }
+    .member{ text-align:center; }
+    .member img{ width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); }
+  </style>
+</head>
+<body>
+  <div class="toast-wrap" id="toastWrap"></div>
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+  <!-- AUTH SECTION -->
+  <section id="authSection" class="auth">
+    <div style="position:absolute; top:16px; right:16px; display:flex; gap:10px;">
+      <button class="pillbtn" onclick="toggleTheme()"><i class="fas fa-moon"></i> Theme</button>
+      <button class="pillbtn" onclick="openAbout()"><i class="fas fa-info-circle"></i> About</button>
+    </div>
+    <div class="auth-card">
+      <div class="brand">
+        <i class="fas fa-feather"></i>
+        <h1>My Life Journal</h1>
+      </div>
+      <div class="tab-switch">
+        <button id="tabLogin" class="active" onclick="toggleMode('login')">Login</button>
+        <button id="tabSignup" onclick="toggleMode('signup')">Sign Up</button>
+      </div>
+      <div id="loginFormContainer">
+        <form id="authForm">
+          <div class="field hidden" id="fieldName">
+            <div class="label">Full Name</div>
+            <input type="text" id="regName" class="input" placeholder="Your full name">
+          </div>
+          <div class="field">
+            <div class="label">Email</div>
+            <input type="email" id="email" class="input" placeholder="you@example.com" required>
+          </div>
+          <div class="field">
+            <div class="label">Password (min 8 chars)</div>
+            <input type="password" id="pass" class="input" placeholder="········" required>
+          </div>
+          <div class="field">
+            <div class="label">6-Digit PIN</div>
+            <input type="password" id="pin" class="input" placeholder="123456" maxlength="6" required>
+          </div>
+          <div class="captcha">
+            <div>
+              <div class="label">Captcha</div>
+              <div class="captcha-code" id="captchaBox">----</div>
+            </div>
+            <button type="button" onclick="generateCaptcha()"><i class="fas fa-rotate"></i> Refresh</button>
+          </div>
+          <div class="field">
+            <div class="label">Enter Captcha</div>
+            <input type="text" id="captchaInp" class="input" placeholder="Type the code">
+          </div>
+          <button type="submit" class="btn" id="submitBtn">Login</button>
+        </form>
+      </div>
+    </div>
+  </section>
 
-app.use(cors());
-app.use(express.json());
+  <!-- APP SECTION -->
+  <section id="app">
+    <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+    <div class="layout">
+      <nav class="sidebar" id="sidebar">
+        <div class="sidebar-logo" onclick="showView('home')">
+          <i class="fas fa-feather"></i> <span>My Life Journal</span>
+        </div>
+        <div class="nav">
+          <a onclick="showView('home')" id="nav-home" class="active"><i class="fas fa-home"></i> Home</a>
+          <a onclick="showView('diary')" id="nav-diary"><i class="fas fa-book"></i> Diary</a>
+          <a onclick="showView('stats')" id="nav-stats"><i class="fas fa-chart-line"></i> Stats</a>
+          <a onclick="showView('friends')" id="nav-friends"><i class="fas fa-users"></i> Friends</a>
+          <a onclick="showView('settings')" id="nav-settings"><i class="fas fa-user-cog"></i> Settings</a>
+        </div>
+        <div class="spacer"></div>
+        <a class="nav logout" onclick="logout()"><i class="fas fa-power-off"></i> Logout</a>
+      </nav>
+      <main class="main">
+        <div class="topbar">
+          <button class="hamburger" onclick="toggleDrawer()"><i class="fas fa-bars"></i> Menu</button>
+          <div style="flex:1;"></div>
+          <button class="btn-ghost" onclick="toggleTheme()"><i class="fas fa-circle-half-stroke"></i> Theme</button>
+          <button class="btn-ghost" onclick="openAbout()"><i class="fas fa-info-circle"></i> About</button>
+          <div class="pill">
+            <img id="topAvatar" alt="avatar" src="https://ui-avatars.com/api/?background=10b981&color=fff&name=User">
+            <div><div class="name" id="userGreet">User</div><div class="sub" id="userEmailSmall" style="font-size:0.75rem;"></div></div>
+          </div>
+        </div>
 
-// CONNECT MONGODB
-mongoose.connect(process.env.MONGO_URL)
-  .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.log(err));
+        <!-- HOME VIEW -->
+        <section id="view-home">
+          <h1>Welcome back 👋</h1>
+          <div class="grid" style="margin-top:14px;">
+            <div class="card">
+              <h3 id="entryCount">0 entries</h3>
+              <p class="muted">Your encrypted journal</p>
+              <div class="chips" style="margin-top:12px;">
+                <span class="chip"><i class="fas fa-key"></i> AES-GCM</span>
+                <span class="chip"><i class="fas fa-bolt"></i> Ctrl+K to add</span>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Backup</h3>
+              <div class="button-row-center">
+                <button class="btn-inline" onclick="exportData()"><i class="fas fa-download"></i> Export</button>
+                <button class="btn-ghost" onclick="document.getElementById('importFile').click()"><i class="fas fa-upload"></i> Import</button>
+                <input id="importFile" type="file" accept=".json" class="hidden" onchange="importData(event)">
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Quick Add</h3>
+            <div class="field"><input id="quickTitle" class="input" placeholder="Title"></div>
+            <div class="row">
+              <div class="field"><select id="quickMood" class="input"><option>🙂 Happy</option><option>😌 Calm</option><option>😤 Stressed</option><option>😢 Sad</option><option>🤩 Excited</option><option>😐 Neutral</option></select></div>
+              <div class="field"><input id="quickTags" class="input" placeholder="Tags (comma)"></div>
+            </div>
+            <div class="field"><textarea id="quickBody" class="input" placeholder="What's on your mind?" rows="3"></textarea></div>
+            <div class="button-row-center"><button class="btn-inline" onclick="quickSave()">Save Entry</button></div>
+          </div>
+        </section>
 
-/* =========================
-   SCHEMAS
-========================= */
+        <!-- DIARY VIEW -->
+        <section id="view-diary" class="hidden">
+          <h1>My Diary</h1>
+          <div class="card">
+            <div class="row">
+              <div class="field"><input type="text" id="diarySearch" class="input" placeholder="Search..." oninput="renderDiary()"></div>
+              <div class="field"><input type="date" id="dateFilter" class="input" onchange="renderDiary()"></div>
+            </div>
+            <div class="row">
+              <div class="field"><select id="sortMode" class="input" onchange="renderDiary()"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></div>
+              <div class="field"><select id="moodFilter" class="input" onchange="renderDiary()"><option value="">All moods</option><option>🙂 Happy</option><option>😌 Calm</option><option>😤 Stressed</option><option>😢 Sad</option><option>🤩 Excited</option><option>😐 Neutral</option></select></div>
+            </div>
+            <div class="button-row-center"><button class="btn-inline" onclick="openEditor()"><i class="fas fa-plus"></i> New Entry</button></div>
+          </div>
+          <div id="diaryContainer"></div>
+        </section>
 
-const userSchema = new mongoose.Schema({
-  username: String,
-  password: String,
-  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
-});
+        <!-- STATS VIEW -->
+        <section id="view-stats" class="hidden">
+          <h1>Statistics</h1>
+          <div class="card">
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; text-align:center;">
+              <div><div class="big" id="kpiTotal" style="font-size:2rem; font-weight:bold;">0</div><div>Total Entries</div></div>
+              <div><div class="big" id="kpiStreak" style="font-size:2rem; font-weight:bold;">0</div><div>Day Streak</div></div>
+              <div><div class="big" id="kpiThisMonth" style="font-size:2rem; font-weight:bold;">0</div><div>This Month</div></div>
+            </div>
+          </div>
+          <div class="card"><canvas id="chart"></canvas></div>
+        </section>
 
-const journalSchema = new mongoose.Schema({
-  userId: String,
-  title: String,
-  content: String,
-  createdAt: { type: Date, default: Date.now }
-});
+        <!-- FRIENDS VIEW -->
+        <section id="view-friends" class="hidden">
+          <h1>Friends</h1>
+          <div class="card"><h3>Add Friend</h3><input id="friendEmail" class="input" placeholder="friend@example.com"><div class="button-row-center"><button class="btn-inline" onclick="addFriendAction()">Send Request</button></div></div>
+          <div class="card"><h3>Pending Requests</h3><div id="pendingRequests"></div></div>
+          <div class="card"><h3>Shared With Me</h3><div id="sharedInboxContainer"></div></div>
+          <div class="card"><h3>My Friends</h3><div id="confirmedFriendsList"></div></div>
+        </section>
 
-const User = mongoose.model("User", userSchema);
-const Journal = mongoose.model("Journal", journalSchema);
+        <!-- SETTINGS VIEW -->
+        <section id="view-settings" class="hidden">
+          <h1>Settings</h1>
+          <div class="card" style="text-align:center;"><img id="userAvatar" style="width:100px;height:100px;border-radius:50%;margin-bottom:16px;"><br><button class="btn-ghost" onclick="document.getElementById('photoInput').click()">Change Photo</button><input id="photoInput" type="file" accept="image/*" class="hidden" onchange="uploadPhoto(event)"></div>
+          <div class="card"><p><strong>Name:</strong> <span id="profName"></span></p><p><strong>Email:</strong> <span id="profEmail"></span></p><div class="button-row-center"><button class="btn-ghost" onclick="exportData()">Export Data</button><button class="btn-ghost" style="background:#ef4444;color:white;" onclick="wipeMyData()">Delete Account</button></div></div>
+        </section>
+      </main>
+    </div>
+  </section>
 
-/* =========================
-   USER ROUTES
-========================= */
+  <!-- EDITOR MODAL -->
+  <div class="modal-backdrop" id="editorBackdrop">
+    <div class="modal">
+      <div class="modal-head"><h3 id="editorTitle">Entry</h3><button class="iconbtn" onclick="closeEditor()">✕</button></div>
+      <div class="modal-body">
+        <input id="eTitle" class="input" placeholder="Title">
+        <div class="row" style="margin-top:10px;"><select id="eMood" class="input"><option>🙂 Happy</option><option>😌 Calm</option><option>😤 Stressed</option><option>😢 Sad</option><option>🤩 Excited</option><option>😐 Neutral</option></select><input id="eTags" class="input" placeholder="Tags (comma)"></div>
+        <div class="field"><input type="date" id="eDate" class="input"></div>
+        <div class="field"><textarea id="eBody" class="input" rows="6" placeholder="Write your entry..."></textarea></div>
+        <div class="field"><input type="file" id="eImage" accept="image/*" onchange="loadEntryImage(event)"><img id="imagePreview" class="thumb hidden"></div>
+        <div class="preview" id="preview">Preview will appear here...</div>
+      </div>
+      <div class="modal-foot"><button class="btn-ghost" onclick="closeEditor()">Cancel</button><button class="btn-inline" onclick="saveFromEditor()">Save</button></div>
+    </div>
+  </div>
 
-// SIGNUP
-app.post("/signup", async (req, res) => {
-  try {
-    const user = new User(req.body);
-    await user.save();
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  <!-- ABOUT MODAL -->
+  <div class="modal-backdrop" id="aboutBackdrop">
+    <div class="modal"><div class="modal-head"><h3>About My Life Journal</h3><button class="iconbtn" onclick="closeAbout()">✕</button></div><div class="modal-body"><p>Secure, encrypted journaling app. Your data is encrypted before it leaves your browser.</p><div class="team"><div class="member"><img src="/Team/Carlo.jpg" onerror="this.src='https://ui-avatars.com/api/?name=Carlo'"><p>Carlo</p></div><div class="member"><img src="/Team/Yurie.jpg" onerror="this.src='https://ui-avatars.com/api/?name=Yurie'"><p>Yurie</p></div><div class="member"><img src="/Team/Archie.jpg" onerror="this.src='https://ui-avatars.com/api/?name=Archie'"><p>Archie</p></div></div></div></div>
+  </div>
 
-// LOGIN (simple version)
-app.post("/login", async (req, res) => {
-  try {
-    const user = await User.findOne(req.body);
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  <script>
+    // ==================== CONFIGURATION ====================
+    const API_URL = window.location.origin;
+    const LS_USERS = "journal_users";
+    const LS_CURRENT = "journal_current";
+    const LS_THEME = "journal_theme";
 
-/* =========================
-   FRIEND SYSTEM
-========================= */
+    // ==================== UTILITIES ====================
+    function $(id) { return document.getElementById(id); }
+    function escapeHtml(str) { return String(str || "").replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    function toast(type, title, msg) { let wrap=$("toastWrap"), el=document.createElement("div"); el.className="toast"+(type==="danger"?" danger":""); el.innerHTML=`<i class="fas ${type==="danger"?"fa-exclamation-triangle":"fa-check-circle"}"></i><div><div class="t-title">${escapeHtml(title)}</div><div class="t-msg">${escapeHtml(msg)}</div></div><button class="x" onclick="this.parentElement.remove()">✕</button>`; wrap.appendChild(el); setTimeout(()=>el.remove(),4000); }
+    function uuid(){ return Date.now()+"-"+Math.random().toString(36).substr(2,9); }
 
-app.post("/add-friend", async (req, res) => {
-  try {
-    const { userId, friendId } = req.body;
+    // Theme
+    function applyTheme(t){ document.documentElement.setAttribute("data-theme", t); localStorage.setItem(LS_THEME, t); }
+    function toggleTheme(){ let cur=localStorage.getItem(LS_THEME)||"light"; applyTheme(cur==="light"?"dark":"light"); }
+    (function(){ let saved=localStorage.getItem(LS_THEME); applyTheme(saved||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")); })();
 
-    await User.findByIdAndUpdate(userId, {
-      $push: { friends: friendId }
+    // Crypto helpers
+    function bytesToB64(b){ return btoa(String.fromCharCode(...b)); }
+    function b64ToBytes(s){ return Uint8Array.from(atob(s), c=>c.charCodeAt(0)); }
+    async function sha256(str){ let enc=new TextEncoder().encode(str); let hash=await crypto.subtle.digest("SHA-256", enc); return bytesToB64(new Uint8Array(hash)); }
+    async function deriveKey(pwd, salt){ let enc=new TextEncoder(); let base=await crypto.subtle.importKey("raw", enc.encode(pwd), "PBKDF2", false, ["deriveKey"]); return crypto.subtle.deriveKey({name:"PBKDF2", salt, iterations:100000, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["encrypt","decrypt"]); }
+    async function encryptJson(obj, pwd, salt){ let iv=crypto.getRandomValues(new Uint8Array(12)); let key=await deriveKey(pwd, b64ToBytes(salt)); let plain=new TextEncoder().encode(JSON.stringify(obj)); let cipher=await crypto.subtle.encrypt({name:"AES-GCM", iv}, key, plain); return {iv:bytesToB64(iv), data:bytesToB64(new Uint8Array(cipher))}; }
+    async function decryptJson(enc, pwd, salt){ let key=await deriveKey(pwd, b64ToBytes(salt)); let plain=await crypto.subtle.decrypt({name:"AES-GCM", iv:b64ToBytes(enc.iv)}, key, b64ToBytes(enc.data)); return JSON.parse(new TextDecoder().decode(plain)); }
+
+    // State
+    let sessionPassword = "";
+    let captchaCode = "";
+    function generateCaptcha(){ captchaCode = Math.random().toString(36).substring(2,7).toUpperCase(); $("captchaBox").innerText = captchaCode; $("captchaInp").value = ""; }
+
+    let authMode = "login";
+    function toggleMode(mode){ authMode=mode; $("tabLogin").classList.toggle("active", mode==="login"); $("tabSignup").classList.toggle("active", mode==="signup"); $("fieldName").classList.toggle("hidden", mode==="login"); $("submitBtn").innerText = mode==="login"?"Login":"Sign Up"; generateCaptcha(); }
+
+    // User management
+    function getCurrentUser(){ let cur=localStorage.getItem(LS_CURRENT); return cur?JSON.parse(cur):null; }
+    function setCurrentUser(u){ localStorage.setItem(LS_CURRENT, JSON.stringify(u)); }
+    function logout(){ localStorage.removeItem(LS_CURRENT); sessionPassword=""; location.reload(); }
+
+    async function loginUser(email, passwordHash, pinHash){
+      try{
+        let res = await fetch(`${API_URL}/api/login`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email, passwordHash, pinHash})});
+        let data = await res.json();
+        if(!res.ok) throw new Error(data.error);
+        setCurrentUser(data);
+        sessionPassword = passwordHash;
+        $("authSection").style.display = "none";
+        $("app").style.display = "block";
+        await loadUserData();
+        showView("home");
+        toast("","Welcome","Logged in successfully");
+      }catch(e){ toast("danger","Login Failed",e.message); }
+    }
+
+    async function signupUser(email, name, passwordHash, pinHash, kdfSalt, pinSalt){
+      try{
+        let res = await fetch(`${API_URL}/api/signup`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email, name, passwordHash, pinHash, kdfSalt, pinSalt, encryptedVault:{iv:"",data:""}})});
+        let data = await res.json();
+        if(!res.ok) throw new Error(data.error);
+        setCurrentUser(data);
+        sessionPassword = passwordHash;
+        $("authSection").style.display = "none";
+        $("app").style.display = "block";
+        await saveVault({posts:[]});
+        await loadUserData();
+        showView("home");
+        toast("","Success","Account created!");
+      }catch(e){ toast("danger","Signup Failed",e.message); }
+    }
+
+    $("authForm").addEventListener("submit", async(e)=>{
+      e.preventDefault();
+      if(($("captchaInp").value||"").trim().toUpperCase() !== captchaCode){ generateCaptcha(); return toast("danger","Wrong Captcha","Try again"); }
+      let email = $("email").value.trim().toLowerCase();
+      let pass = $("pass").value;
+      let pin = $("pin").value;
+      if(!email || !pass || !pin) return toast("danger","Missing","All fields required");
+      if(pin.length!==6 || !/^\d+$/.test(pin)) return toast("danger","Invalid PIN","PIN must be 6 digits");
+      if(authMode==="signup"){
+        let name = $("regName").value.trim();
+        if(!name || name.length<2) return toast("danger","Name required","Enter your full name");
+        if(pass.length<8) return toast("danger","Weak Password","Minimum 8 characters");
+        let kdfSalt = bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
+        let pinSalt = bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
+        let passwordHash = await sha256(pass + "|" + kdfSalt);
+        let pinHash = await sha256(pin + "|" + pinSalt);
+        await signupUser(email, name, passwordHash, pinHash, kdfSalt, pinSalt);
+      }else{
+        let user = getCurrentUser();
+        if(!user) return toast("danger","Error","No user data");
+        let passwordHash = await sha256(pass + "|" + user.kdfSalt);
+        let pinHash = await sha256(pin + "|" + user.pinSalt);
+        await loginUser(email, passwordHash, pinHash);
+      }
     });
 
-    res.json({ message: "Friend added" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    // Vault operations
+    async function openVault(){
+      let user = getCurrentUser();
+      if(!user || !user.encryptedVault || !user.encryptedVault.iv) return {posts:[]};
+      try{
+        return await decryptJson(user.encryptedVault, sessionPassword, user.kdfSalt);
+      }catch(e){ toast("danger","Decrypt Error","Wrong password? Logging out..."); logout(); return {posts:[]}; }
+    }
+    async function saveVault(vault){
+      let user = getCurrentUser();
+      if(!user) return;
+      user.encryptedVault = await encryptJson(vault, sessionPassword, user.kdfSalt);
+      setCurrentUser(user);
+      await fetch(`${API_URL}/api/user/update`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email:user.email, encryptedVault:user.encryptedVault})});
+    }
 
-/* =========================
-   JOURNAL SYSTEM
-========================= */
+    async function loadUserData(){
+      let user = getCurrentUser();
+      if(!user) return;
+      $("userGreet").innerText = user.name || user.email.split("@")[0];
+      $("userEmailSmall").innerText = user.email;
+      $("profName").innerText = user.name || "User";
+      $("profEmail").innerText = user.email;
+      let avatarUrl = user.photo || `https://ui-avatars.com/api/?background=10b981&color=fff&name=${encodeURIComponent(user.name||"User")}`;
+      $("userAvatar").src = avatarUrl;
+      $("topAvatar").src = avatarUrl;
+    }
 
-app.post("/journal", async (req, res) => {
-  try {
-    const journal = new Journal(req.body);
-    await journal.save();
-    res.json(journal);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    // Diary functions
+    async function renderDiary(){
+      let vault = await openVault();
+      let posts = vault.posts || [];
+      $("entryCount").innerText = posts.length;
+      let search = ($("diarySearch").value||"").toLowerCase();
+      let dateFilter = $("dateFilter").value;
+      let moodFilter = $("moodFilter").value;
+      let sortMode = $("sortMode").value;
+      let filtered = posts.filter(p=>{
+        if(search && !(p.title+ p.body+ (p.tags||[]).join(" ")).toLowerCase().includes(search)) return false;
+        if(dateFilter && p.date !== dateFilter) return false;
+        if(moodFilter && p.mood !== moodFilter) return false;
+        return true;
+      });
+      filtered.sort((a,b)=>sortMode==="oldest"?new Date(a.date)-new Date(b.date):new Date(b.date)-new Date(a.date));
+      if(filtered.length===0){ $("diaryContainer").innerHTML="<div class='card empty'>No entries found</div>"; return; }
+      $("diaryContainer").innerHTML = filtered.map(p=>`<div class='card'><div class='entry'><div><small>${p.date} • ${p.mood}</small><h4>${escapeHtml(p.title)}</h4><p>${escapeHtml(p.body)}</p>${p.image?`<img class='thumb' src='${p.image}'>`:""}<div class='chips'>${(p.tags||[]).map(t=>`<span class='chip'>#${escapeHtml(t)}</span>`).join("")}</div></div><div class='entry-actions'><button class='iconbtn' onclick='shareToFriend("${p.id}")'><i class='fas fa-share'></i></button><button class='iconbtn' onclick='editEntry("${p.id}")'><i class='fas fa-edit'></i></button><button class='iconbtn' onclick='deleteEntry("${p.id}")'><i class='fas fa-trash'></i></button></div></div></div>`).join("");
+    }
 
-app.get("/journals/:userId", async (req, res) => {
-  try {
-    const journals = await Journal.find({ userId: req.params.userId });
-    res.json(journals);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    async function quickSave(){
+      let title=$("quickTitle").value, mood=$("quickMood").value, tags=$("quickTags").value.split(",").map(t=>t.trim()).filter(Boolean), body=$("quickBody").value;
+      if(!body && !title) return toast("danger","Empty","Write something");
+      let vault = await openVault();
+      vault.posts = vault.posts || [];
+      vault.posts.push({id:uuid(), title, mood, tags, body, date:new Date().toISOString().slice(0,10), createdAt:new Date().toISOString(), image:null});
+      await saveVault(vault);
+      $("quickTitle").value=""; $("quickTags").value=""; $("quickBody").value="";
+      toast("","Saved","Entry added");
+      await renderDiary();
+    }
 
-/* =========================
-   SERVER START
-========================= */
+    let editingId=null, editingImage=null;
+    function openEditor(entry=null){
+      editingId=entry?.id||null; editingImage=entry?.image||null;
+      $("editorTitle").innerText=editingId?"Edit Entry":"New Entry";
+      $("eTitle").value=entry?.title||"";
+      $("eMood").value=entry?.mood||"😐 Neutral";
+      $("eTags").value=(entry?.tags||[]).join(", ");
+      $("eDate").value=entry?.date||new Date().toISOString().slice(0,10);
+      $("eBody").value=entry?.body||"";
+      $("imagePreview").classList.toggle("hidden",!editingImage);
+      if(editingImage) $("imagePreview").src=editingImage;
+      $("editorBackdrop").style.display="flex";
+      updatePreview();
+    }
+    function closeEditor(){ $("editorBackdrop").style.display="none"; editingId=null; editingImage=null; }
+    function updatePreview(){ $("preview").innerHTML=($("eBody").value||"").replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/\n/g,"<br>") || "Preview..."; }
+    $("eBody").addEventListener("input",updatePreview);
+    function loadEntryImage(e){ let f=e.target.files[0]; if(!f) return; let r=new FileReader(); r.onload=()=>{ editingImage=r.result; $("imagePreview").src=editingImage; $("imagePreview").classList.remove("hidden"); }; r.readAsDataURL(f); }
+    async function saveFromEditor(){
+      let title=$("eTitle").value, mood=$("eMood").value, tags=$("eTags").value.split(",").map(t=>t.trim()).filter(Boolean), date=$("eDate").value, body=$("eBody").value;
+      if(!title && !body) return toast("danger","Empty","Add content");
+      let vault=await openVault();
+      if(editingId){
+        let idx=vault.posts.findIndex(p=>p.id===editingId);
+        if(idx!==-1) vault.posts[idx]={...vault.posts[idx], title, mood, tags, date, body, image:editingImage, editedAt:new Date().toISOString()};
+      }else{
+        vault.posts.push({id:uuid(), title, mood, tags, date, body, image:editingImage, createdAt:new Date().toISOString()});
+      }
+      await saveVault(vault);
+      closeEditor();
+      await renderDiary();
+      toast("","Saved","Entry saved");
+    }
+    async function editEntry(id){ let vault=await openVault(); let entry=vault.posts.find(p=>p.id===id); if(entry) openEditor(entry); }
+    async function deleteEntry(id){ if(!confirm("Delete this entry?")) return; let vault=await openVault(); vault.posts=vault.posts.filter(p=>p.id!==id); await saveVault(vault); await renderDiary(); toast("","Deleted","Entry removed"); }
 
-app.use(express.static(path.join(__dirname, "public")));
+    async function updateStats(){
+      let vault=await openVault(); let posts=vault.posts||[];
+      $("kpiTotal").innerText=posts.length;
+      let dates=new Set(posts.map(p=>p.date));
+      let streak=0; for(let d=new Date();;){ let iso=d.toISOString().slice(0,10); if(dates.has(iso)) streak++; else break; d.setDate(d.getDate()-1); }
+      $("kpiStreak").innerText=streak;
+      let now=new Date(); let thisMonth=posts.filter(p=>(p.date||"").slice(0,7)===now.toISOString().slice(0,7)).length;
+      $("kpiThisMonth").innerText=thisMonth;
+      let ctx=$("chart").getContext("2d"); let counts=[]; for(let i=11;i>=0;i--){ let d=new Date(now.getFullYear(), now.getMonth()-i,1); counts.push(posts.filter(p=>(p.date||"").slice(0,7)===d.toISOString().slice(0,7)).length); }
+      $("chart").width=$("chart").clientWidth; $("chart").height=200; ctx.clearRect(0,0,$("chart").width,200);
+      let max=Math.max(1,...counts); let w=$("chart").width/counts.length;
+      for(let i=0;i<counts.length;i++){ let h=(counts[i]/max)*150; ctx.fillStyle="#10b981"; ctx.fillRect(i*w,200-h,w-2,h); }
+    }
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+    // Friends & Sharing
+    async function addFriendAction(){
+      let email=$("friendEmail").value.trim().toLowerCase();
+      if(!email) return toast("danger","Error","Enter email");
+      let current=getCurrentUser();
+      try{
+        let res=await fetch(`${API_URL}/api/friends/request`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({userEmail:current.email, friendEmail:email})});
+        let data=await res.json();
+        if(!res.ok) throw new Error(data.error);
+        toast("success","Sent","Friend request sent");
+        $("friendEmail").value="";
+      }catch(e){ toast("danger","Error",e.message); }
+    }
+    async function shareToFriend(postId){
+      let friendEmail=prompt("Enter friend's email:");
+      if(!friendEmail) return;
+      let vault=await openVault();
+      let entry=vault.posts.find(p=>p.id===postId);
+      if(!entry) return toast("danger","Error","Entry not found");
+      let current=getCurrentUser();
+      try{
+        let res=await fetch(`${API_URL}/api/share`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({fromEmail:current.email, toEmail:friendEmail, title:entry.title, body:entry.body, mood:entry.mood, date:entry.date, image:entry.image||null, tags:entry.tags||[]})});
+        let data=await res.json();
+        if(!res.ok) throw new Error(data.error);
+        toast("success","Shared","Entry shared!");
+      }catch(e){ toast("danger","Error",e.message); }
+    }
+    async function loadSharedInbox(){
+      let current=getCurrentUser();
+      if(!current) return;
+      try{
+        let res=await fetch(`${API_URL}/api/shared/inbox`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({userEmail:current.email})});
+        let data=await res.json();
+        let container=$("sharedInboxContainer");
+        if(!data.shared||data.shared.length===0){ container.innerHTML="<p class='muted'>No shared entries</p>"; return; }
+        container.innerHTML=data.shared.map(s=>`<div class='card'><small>From: ${escapeHtml(s.fromEmail)}</small><h4>${escapeHtml(s.title)}</h4><p>${escapeHtml(s.body)}</p>${s.image?`<img class='thumb' src='${s.image}'>`:""}</div>`).join("");
+      }catch(e){ console.error(e); }
+    }
+    async function loadFriendsList(){
+      let current=getCurrentUser();
+      if(!current) return;
+      try{
+        let res=await fetch(`${API_URL}/api/friends/list`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({userEmail:current.email})});
+        let data=await res.json();
+        let container=$("confirmedFriendsList");
+        if(!data.friends||data.friends.length===0){ container.innerHTML="<p class='muted'>No friends yet</p>"; return; }
+        container.innerHTML=data.friends.map(f=>`<div class='card'><strong>${escapeHtml(f.email)}</strong></div>`).join("");
+      }catch(e){ console.error(e); }
+    }
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("Server running on port " + PORT);
-});
+    // Backup
+    async function exportData(){ let user=getCurrentUser(); if(!user) return; let blob=new Blob([JSON.stringify(user)], {type:"application/json"}); let a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="journal-backup.json"; a.click(); }
+    async function importData(e){ let file=e.target.files[0]; if(!file) return; let r=new FileReader(); r.onload=async()=>{ try{ let data=JSON.parse(r.result); setCurrentUser(data); await loadUserData(); toast("","Imported","Restart to apply"); }catch(e){ toast("danger","Invalid file","Could not import"); } }; r.readAsText(file); }
+    async function wipeMyData(){ if(!confirm("Delete ALL your data?")) return; let user=getCurrentUser(); if(user) await fetch(`${API_URL}/api/user/update`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email:user.email, encryptedVault:{iv:"",data:""}})}); localStorage.clear(); logout(); }
+    async function uploadPhoto(e){ let f=e.target.files[0]; if(!f) return; let r=new FileReader(); r.onload=async()=>{ let user=getCurrentUser(); if(!user) return; user.photo=r.result; setCurrentUser(user); await fetch(`${API_URL}/api/user/update`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email:user.email, photo:r.result})}); await loadUserData(); toast("","Updated","Photo changed"); }; r.readAsDataURL(f); }
+
+    // Navigation
+    function showView(v){ ["home","diary","stats","friends","settings"].forEach(vv=>{ let el=$("view-"+vv); if(el) el.classList.add("hidden"); }); $("view-"+v).classList.remove("hidden"); ["home","diary","stats","friends","settings"].forEach(vv=>{ let nav=$("nav-"+vv); if(nav) nav.classList.remove("active"); }); $("nav-"+v).classList.add("active"); if(v==="stats") updateStats(); if(v==="friends"){ loadSharedInbox(); loadFriendsList(); } if(window.innerWidth<=768) closeDrawer(); }
+    function toggleDrawer(){ $("sidebar").classList.toggle("open"); $("drawerBackdrop").classList.toggle("show"); }
+    function closeDrawer(){ $("sidebar").classList.remove("open"); $("drawerBackdrop").classList.remove("show"); }
+    function openAbout(){ $("aboutBackdrop").style.display="flex"; }
+    function closeAbout(){ $("aboutBackdrop").style.display="none"; }
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown",(e)=>{ if(e.ctrlKey && e.key.toLowerCase()==="k"){ e.preventDefault(); if($("app").style.display!=="none") openEditor(); } if(e.key==="Escape" && $("editorBackdrop").style.display==="flex") closeEditor(); });
+
+    // Init
+    generateCaptcha();
+    toggleMode("login");
+    let savedUser=getCurrentUser();
+    if(savedUser && savedUser.email){ $("email").value=savedUser.email; toast("info","Session","Enter password to unlock"); }
+  </script>
+</body>
+</html>
