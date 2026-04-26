@@ -1092,6 +1092,7 @@ function toast(type, title, msg){
   wrap.appendChild(el);
   setTimeout(() => { if (el && el.parentElement) el.remove(); }, 4500);
 }
+
 function escapeHtml(str){
   return String(str ?? "")
     .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
@@ -1102,10 +1103,12 @@ function applyTheme(theme){
   document.documentElement.setAttribute("data-theme", theme);
   localStorage.setItem(LS_THEME, theme);
 }
+
 function toggleTheme(){
   const cur = localStorage.getItem(LS_THEME) || "light";
   applyTheme(cur === "light" ? "dark" : "light");
 }
+
 (function initTheme(){
   const saved = localStorage.getItem(LS_THEME);
   if(saved) applyTheme(saved);
@@ -1129,8 +1132,8 @@ function bytesToB64(bytes){
 }
 
 let captchaCode = "";
+
 function generateCaptcha(){
-  // Generate random 6-character code
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
   let code = '';
   for (let i = 0; i < 6; i++) {
@@ -1149,23 +1152,25 @@ function generateCaptcha(){
   }
 }
 
-// Also make sure captcha generates when page loads
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', generateCaptcha);
 } else {
   generateCaptcha();
 }
+
 function b64ToBytes(b64){
   const bin = atob(b64);
   const bytes = new Uint8Array(bin.length);
   for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
   return bytes;
 }
+
 async function sha256(str){
   const enc = new TextEncoder().encode(str);
   const hash = await crypto.subtle.digest("SHA-256", enc);
   return bytesToB64(new Uint8Array(hash));
 }
+
 async function deriveAesKey(password, saltBytes){
   const enc = new TextEncoder();
   const baseKey = await crypto.subtle.importKey(
@@ -1179,6 +1184,7 @@ async function deriveAesKey(password, saltBytes){
     ["encrypt","decrypt"]
   );
 }
+
 async function encryptJson(obj, password, saltB64){
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const salt = b64ToBytes(saltB64);
@@ -1187,6 +1193,7 @@ async function encryptJson(obj, password, saltB64){
   const cipher = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, key, plain);
   return { iv: bytesToB64(iv), data: bytesToB64(new Uint8Array(cipher)) };
 }
+
 async function decryptJson(encObj, password, saltB64){
   const salt = b64ToBytes(saltB64);
   const iv = b64ToBytes(encObj.iv);
@@ -1198,6 +1205,7 @@ async function decryptJson(encObj, password, saltB64){
 }
 
 let authMode = "login";
+
 function toggleMode(mode){
   authMode = mode;
   $("tabLogin").classList.toggle("active", mode === "login");
@@ -1209,11 +1217,13 @@ function toggleMode(mode){
   $("pass").setAttribute("autocomplete", mode === "login" ? "current-password" : "new-password");
   generateCaptcha();
 }
+
 function toggleRecovery(show){
   $("loginFormContainer").classList.toggle("hidden", show);
   $("recoveryFormContainer").classList.toggle("hidden", !show);
   generateCaptcha();
 }
+
 async function handleRecovery(){
   const email = $("recoverEmail").value.trim().toLowerCase();
   const name  = $("recoverNameInput").value.trim();
@@ -1340,18 +1350,33 @@ $("authForm").addEventListener("submit", async (e) => {
   }
 });
 
+/* ---------- FIXED LOGIN FUNCTION ---------- */
 async function login(email, password){
-  sessionPassword = password;
-  writeCurrent({ email });
+  try {
+    sessionPassword = password;
+    writeCurrent({ email });
 
-  $("authSection").style.display = "none";
-  $("app").style.display = "block";
+    // Verify user exists before showing app
+    const user = getUser();
+    if (!user) {
+      throw new Error("User data not found");
+    }
 
-  await hydrateUserUI();
-  showView("home");
-  await refreshAll();
+    $("authSection").style.display = "none";
+    $("app").style.display = "block";
 
-  toast("", "Welcome", "Session ready.");
+    await hydrateUserUI();
+    showView("home");
+    await refreshAll();
+
+    toast("", "Welcome", "Session ready.");
+  } catch (error) {
+    console.error("Login error:", error);
+    toast("danger", "Login Failed", "Please try again");
+    // Stay on login screen
+    $("authSection").style.display = "flex";
+    $("app").style.display = "none";
+  }
 }
 
 async function hydrateUserUI(){
@@ -1380,10 +1405,12 @@ function toggleDrawer(){
   side.classList.toggle("open", open);
   back.classList.toggle("show", open);
 }
+
 function closeDrawer(){
   $("sidebar").classList.remove("open");
   $("drawerBackdrop").classList.remove("show");
 }
+
 function showView(v){
   ["home","diary","stats","friends","settings"].forEach(id => {
     const el = $("view-"+id);
@@ -1412,12 +1439,14 @@ function getUser(){
   if(!cur?.email) return null;
   return readUsers().find(u => u.email === cur.email) || null;
 }
+
 function upsertUser(updated){
   const users = readUsers();
   const idx = users.findIndex(u => u.email === updated.email);
   if(idx !== -1) users[idx] = updated; else users.push(updated);
   writeUsers(users);
 }
+
 async function openVault(){
   const me = getUser();
   if(!me) return { posts: [] };
@@ -1433,6 +1462,7 @@ async function openVault(){
     throw err;
   }
 }
+
 async function saveVault(vault){
   const me = getUser();
   if(!me) return;
@@ -1493,6 +1523,7 @@ function normalizeEntry(e){
     image: e.image || null
   };
 }
+
 function extractInlineTags(text){
   const matches = (text.match(/(^|\s)#([a-zA-Z0-9_\-]{2,})/g) || [])
     .map(m => m.trim().replace("#","").toLowerCase());
@@ -1567,10 +1598,12 @@ function basicMarkdownToHtml(text){
   t = t.replace(/\n/g, "<br>");
   return t;
 }
+
 function updatePreview(){
   const body = $("eBody").value || "";
   $("preview").innerHTML = body.trim() ? basicMarkdownToHtml(body) : "Start typing to see preview…";
 }
+
 $("eBody").addEventListener("input", updatePreview);
 
 function loadEntryImage(e){
@@ -1704,9 +1737,8 @@ async function deleteEntry(id){
   await refreshAll();
 }
 
-/* ---------- Stats (FIXED) ---------- */
+/* ---------- Stats ---------- */
 async function updateStats(){
-  // Check if user is logged in first
   const me = getUser();
   if (!me) return;
   
@@ -1714,7 +1746,6 @@ async function updateStats(){
   const posts = (vault.posts || []).map(normalizeEntry);
   $("kpiTotal").innerText = String(posts.length);
 
-  // current streak
   const dates = new Set(posts.map(p => p.date));
   let streak = 0;
   for(let d = new Date(); ; ){
@@ -1725,13 +1756,11 @@ async function updateStats(){
   }
   $("kpiStreak").innerText = String(streak);
 
-  // this month
   const now = new Date();
   const ym = now.toISOString().slice(0,7);
   const thisMonth = posts.filter(p => (p.date || "").slice(0,7) === ym).length;
   $("kpiThisMonth").innerText = String(thisMonth);
 
-  // Check if chart element exists before drawing
   const chartElement = $("chart");
   if (chartElement) {
     drawChart(posts);
@@ -1740,10 +1769,10 @@ async function updateStats(){
 
 function drawChart(posts){
   const c = $("chart");
-  if (!c) return; // Exit if chart element doesn't exist
+  if (!c) return;
   
   const ctx = c.getContext("2d");
-  if (!ctx) return; // Exit if canvas context not available
+  if (!ctx) return;
 
   const dpr = window.devicePixelRatio || 1;
   const cssW = c.clientWidth || 600;
@@ -1834,6 +1863,7 @@ function uploadPhoto(e){
   };
   reader.readAsDataURL(file);
 }
+
 function resetPhoto(){
   const me = getUser();
   if(!me) return;
