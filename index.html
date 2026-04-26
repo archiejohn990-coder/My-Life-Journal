@@ -805,6 +805,57 @@ window.saveVault = async function(vault) {
   await originalSaveVault(vault);
   await syncToCloud();
 };
+
+    // Add to your existing JavaScript in index.html
+
+// Auto-sync after every save
+const originalSaveVault = window.saveVault;
+window.saveVault = async function(vault) {
+  await originalSaveVault(vault);
+  
+  // Push to cloud
+  const user = getCurrentUser();
+  if (user && navigator.onLine) {
+    try {
+      await fetch(`${API_URL}/api/sync/push`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user.email,
+          encryptedVault: user.encryptedVault
+        })
+      });
+      console.log("✅ Synced to cloud");
+    } catch (e) {
+      console.log("⚠️ Offline - will sync later");
+    }
+  }
+};
+
+// Check for updates every 30 seconds
+setInterval(async () => {
+  const user = getCurrentUser();
+  if (!user || !navigator.onLine) return;
+  
+  try {
+    const res = await fetch(`${API_URL}/api/sync/pull`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user.email })
+    });
+    const data = await res.json();
+    
+    if (data.encryptedVault && data.encryptedVault.iv) {
+      // Update local from cloud
+      user.encryptedVault = data.encryptedVault;
+      localStorage.setItem(LS_CURRENT, JSON.stringify(user));
+      await renderDiary();
+      toast("info", "Sync", "Updated from another device");
+    }
+  } catch (e) {
+    // Silently fail
+  }
+}, 30000);
   </script>
 </body>
 </html>
