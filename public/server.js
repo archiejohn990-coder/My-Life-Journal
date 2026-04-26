@@ -10,6 +10,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+mongoose.connect("YOUR_MONGO_URL")
+.then(() => console.log("MongoDB Connected"))
+.catch(err => console.log(err));
+
 // serve frontend
 app.use(express.static(path.join(__dirname, "public")));
 
