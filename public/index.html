@@ -1034,39 +1034,6 @@ saveVault = async function(vault) {
   }
 };
 
-const originalAddFriendAction = window.addFriendAction;
-window.addFriendAction = async function() {
-  const currentUser = readCurrent();
-  if (!currentUser) {
-    return originalAddFriendAction();
-  }
-  
-  const emailInput = document.getElementById("friendEmail");
-  const targetEmail = emailInput.value.trim().toLowerCase();
-  
-  if (!targetEmail) return toast("danger", "Error", "Please enter an email.");
-  if (targetEmail === currentUser.email.toLowerCase()) return toast("danger", "Error", "You cannot add yourself.");
-  
-  try {
-    const response = await fetch(`${API_URL}/api/friends/request`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userEmail: currentUser.email, friendEmail: targetEmail })
-    });
-    
-    if (response.ok) {
-      toast("success", "Sent", "Friend request sent!");
-      emailInput.value = "";
-      originalAddFriendAction();
-    } else {
-      const data = await response.json();
-      throw new Error(data.error);
-    }
-  } catch (error) {
-    originalAddFriendAction();
-  }
-};
-
 setInterval(() => {
   const currentUser = readCurrent();
   if (currentUser && document.getElementById("app").style.display !== "none") {
@@ -1350,13 +1317,11 @@ $("authForm").addEventListener("submit", async (e) => {
   }
 });
 
-/* ---------- FIXED LOGIN FUNCTION ---------- */
 async function login(email, password){
   try {
     sessionPassword = password;
     writeCurrent({ email });
 
-    // Verify user exists before showing app
     const user = getUser();
     if (!user) {
       throw new Error("User data not found");
@@ -1373,7 +1338,6 @@ async function login(email, password){
   } catch (error) {
     console.error("Login error:", error);
     toast("danger", "Login Failed", "Please try again");
-    // Stay on login screen
     $("authSection").style.display = "flex";
     $("app").style.display = "none";
   }
@@ -1385,7 +1349,6 @@ async function hydrateUserUI(){
 
   $("userGreet").innerText = me.name;
   $("userEmailSmall").innerText = me.email;
-
   $("profName").innerText = me.name;
   $("profEmail").innerText = me.email;
 
@@ -1427,9 +1390,9 @@ function showView(v){
 
   if(v === "stats") updateStats();
   if(v === "friends") {
-    if(window.checkIncomingRequests) window.checkIncomingRequests();
-    if(window.renderFriendsList) window.renderFriendsList();
-    if(window.renderSharedInbox) window.renderSharedInbox();
+    loadFriendsList();
+    checkIncomingRequests();
+    loadSharedInbox();
   }
 }
 
@@ -1482,22 +1445,16 @@ function togglePinVisibility(){
   }
 
   pinHidden = !pinHidden;
-
   const pinDisplay = pinHidden ? "••••••" : "PIN is hashed for security";
   
   const pinTextEl = document.getElementById("pinText");
   const pinIconEl = document.getElementById("pinToggleIcon");
   
-  if (pinTextEl) {
-    pinTextEl.innerText = pinDisplay;
-  }
-  
-  if (pinIconEl) {
-    pinIconEl.className = pinHidden ? "fas fa-eye" : "fas fa-eye-slash";
-  }
+  if (pinTextEl) pinTextEl.innerText = pinDisplay;
+  if (pinIconEl) pinIconEl.className = pinHidden ? "fas fa-eye" : "fas fa-eye-slash";
 
   if(!pinHidden){
-    toast("info", "Security Info", "Your PIN is stored as a hash and cannot be displayed for security reasons.");
+    toast("info", "Security Info", "Your PIN is stored as a hash and cannot be displayed.");
     setTimeout(() => {
       if (!pinHidden) {
         pinHidden = true;
@@ -1996,131 +1953,210 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-/* ---------- Friends System Functions ---------- */
-window.renderSharedInbox = function() {
-    const currentUser = readCurrent();
-    if (!currentUser) return;
+/* ========== FRIENDS SYSTEM - BACKEND VERSION ========== */
 
-    const sharedPool = JSON.parse(localStorage.getItem('journal_ultra_shared_posts')) || [];
-    const container = document.getElementById('sharedInboxContainer'); 
-
-    if (!container) return;
-
-    const myInbox = sharedPool.filter(post => 
-        post.to && post.to.toLowerCase().trim() === currentUser.email.toLowerCase().trim()
-    );
-
-    if (myInbox.length === 0) {
-        container.innerHTML = '<p class="muted" style="text-align:center; padding:20px;">No entries shared with you yet.</p>';
-        return;
-    }
-
-    container.innerHTML = myInbox.map(post => `
-        <div class="card" style="background: rgba(255,255,255,0.05); margin-bottom: 10px; border-left: 3px solid var(--primary);">
-            <div style="display:flex; justify-content:space-between;">
-                <small>From: <b>${escapeHtml(post.from)}</b></small>
-                <small class="muted">${new Date(post.sharedAt).toLocaleDateString()}</small>
-            </div>
-            <h4 style="margin: 8px 0;">${escapeHtml(post.title)}</h4>
-            <p style="font-size: 0.9rem;">${escapeHtml(post.body)}</p>
-            ${post.image ? `<img src="${post.image}" style="width:100px; border-radius:5px; margin-top:5px;"/>` : ''}
-        </div>
-    `).join('');
+// Send friend request (uses backend)
+window.addFriendAction = async function() {
+  const emailInput = document.getElementById("friendEmail");
+  const targetEmail = emailInput.value.trim().toLowerCase();
+  const currentUser = readCurrent();
+  
+  if (!targetEmail) return toast("danger", "Error", "Please enter an email.");
+  if (targetEmail === currentUser.email.toLowerCase()) return toast("danger", "Error", "You cannot add yourself.");
+  
+  try {
+    const response = await fetch(`${API_URL}/api/friends/request`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userEmail: currentUser.email, friendEmail: targetEmail })
+    });
+    
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+    
+    toast("success", "Sent", "Friend request sent!");
+    emailInput.value = "";
+    
+    checkIncomingRequests();
+    
+  } catch (error) {
+    toast("danger", "Error", error.message);
+  }
 };
 
-window.checkIncomingRequests = function() {
-    const currentUser = readCurrent();
-    if (!currentUser) return;
-    const allRequests = JSON.parse(localStorage.getItem('journal_ultra_requests')) || [];
-    const myEmail = currentUser.email.toLowerCase().trim();
-
-    const myIncoming = allRequests.filter(req => req.to && req.to.toLowerCase().trim() === myEmail && req.status === 'pending');
+// Check incoming requests (from backend)
+window.checkIncomingRequests = async function() {
+  const currentUser = readCurrent();
+  if (!currentUser) return;
+  
+  try {
+    const response = await fetch(`${API_URL}/api/friends/requests`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userEmail: currentUser.email })
+    });
+    
+    const data = await response.json();
     const container = document.getElementById("pendingRequests");
     if (!container) return;
-
-    if (myIncoming.length === 0) {
-        container.innerHTML = '<p class="muted" style="text-align:center; padding:10px;">No new requests.</p>';
-        return;
+    
+    const requests = data.requests || [];
+    
+    if (requests.length === 0) {
+      container.innerHTML = '<p class="muted" style="text-align:center; padding:10px;">No pending requests.</p>';
+      return;
     }
-
-    container.innerHTML = myIncoming.map(req => `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;">
-            <span><strong>${escapeHtml(req.from)}</strong></span>
-            <button class="btn-inline" onclick="acceptFriend('${req.from}')"><i class="fas fa-check"></i> Accept</button>
-        </div>
+    
+    container.innerHTML = requests.map(req => `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;">
+        <span><strong>${escapeHtml(req.from?.email || req.fromEmail)}</strong></span>
+        <button class="btn-inline" onclick="acceptFriendRequest('${req._id}')"><i class="fas fa-check"></i> Accept</button>
+      </div>
     `).join('');
+    
+  } catch (error) {
+    console.error("Check requests error:", error);
+  }
 };
 
-window.acceptFriend = function(senderEmail) {
-    let allRequests = JSON.parse(localStorage.getItem('journal_ultra_requests')) || [];
-    const currentUser = readCurrent();
-
-    allRequests = allRequests.map(req => {
-        if (req.from === senderEmail && req.to === currentUser.email) return { ...req, status: 'accepted' };
-        return req;
+// Accept friend request (uses backend)
+window.acceptFriendRequest = async function(requestId) {
+  const currentUser = readCurrent();
+  
+  try {
+    const response = await fetch(`${API_URL}/api/friends/accept`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userEmail: currentUser.email, requestId: requestId })
     });
-
-    localStorage.setItem('journal_ultra_requests', JSON.stringify(allRequests));
+    
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+    
     toast("success", "Accepted", "You are now friends!");
-    window.checkIncomingRequests();
-    window.renderFriendsList(); 
+    
+    checkIncomingRequests();
+    loadFriendsList();
+    
+  } catch (error) {
+    toast("danger", "Error", error.message);
+  }
 };
 
-window.renderFriendsList = function() {
-    const currentUser = readCurrent();
-    const allRequests = JSON.parse(localStorage.getItem('journal_ultra_requests')) || [];
-    const listContainer = document.getElementById("confirmedFriendsList");
-    if (!listContainer || !currentUser) return;
-
-    const myFriends = allRequests.filter(req => {
-        return req.status === 'accepted' && 
-               (req.to === currentUser.email || 
-                req.from === currentUser.email);
+// Load friends list (from backend)
+window.loadFriendsList = async function() {
+  const currentUser = readCurrent();
+  if (!currentUser) return;
+  
+  try {
+    const response = await fetch(`${API_URL}/api/friends/list`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userEmail: currentUser.email })
     });
-
-    if (myFriends.length === 0) {
-        listContainer.innerHTML = '<p class="muted" style="text-align:center; padding:10px;">No friends added yet.</p>';
-        return;
+    
+    const data = await response.json();
+    const container = document.getElementById("confirmedFriendsList");
+    if (!container) return;
+    
+    const friends = data.friends || [];
+    
+    if (friends.length === 0) {
+      container.innerHTML = '<p class="muted" style="text-align:center; padding:10px;">No friends added yet.</p>';
+      return;
     }
-
-    listContainer.innerHTML = myFriends.map(req => {
-        const friendEmail = req.from === currentUser.email ? req.to : req.from;
-        return `
-            <div style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid var(--border);">
-                <div style="width: 35px; height: 35px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                    ${friendEmail.charAt(0).toUpperCase()}
-                </div>
-                <div style="font-weight: 500;">${escapeHtml(friendEmail)}</div>
-            </div>
-        `;
-    }).join('');
+    
+    container.innerHTML = friends.map(friend => `
+      <div style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid var(--border);">
+        <div style="width: 35px; height: 35px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+          ${friend.name ? friend.name.charAt(0).toUpperCase() : friend.email.charAt(0).toUpperCase()}
+        </div>
+        <div style="font-weight: 500;">${escapeHtml(friend.name || friend.email)}</div>
+        <div style="font-size: 0.8rem; color: var(--muted);">${escapeHtml(friend.email)}</div>
+      </div>
+    `).join('');
+    
+  } catch (error) {
+    console.error("Load friends error:", error);
+  }
 };
 
-async function shareToFriend(postId) {
-    const friendEmail = prompt("Enter the friend's email to share this entry:");
-    if (!friendEmail) return;
-
-    const vault = await openVault();
-    const entry = vault.posts.find(p => p.id === postId);
-    if (!entry) return toast("danger", "Error", "Entry not found.");
-
-    const sharedData = {
-        from: readCurrent().email,
-        to: friendEmail.toLowerCase().trim(),
+// Share to friend (uses backend)
+window.shareToFriend = async function(postId) {
+  const friendEmail = prompt("Enter your friend's email to share this entry:");
+  if (!friendEmail) return;
+  
+  const vault = await openVault();
+  const entry = vault.posts.find(p => p.id === postId);
+  if (!entry) return toast("danger", "Error", "Entry not found.");
+  
+  const currentUser = readCurrent();
+  
+  try {
+    const response = await fetch(`${API_URL}/api/share`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fromEmail: currentUser.email,
+        toEmail: friendEmail,
         title: entry.title,
         body: entry.body,
         mood: entry.mood,
         date: entry.date,
-        image: entry.image,
-        sharedAt: new Date().toISOString()
-    };
+        image: entry.image || null,
+        tags: entry.tags || []
+      })
+    });
+    
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+    
+    toast("success", "Shared!", `Entry sent to ${friendEmail}`);
+    
+  } catch (error) {
+    toast("danger", "Error", error.message);
+  }
+};
 
-    let sharedPool = JSON.parse(localStorage.getItem('journal_ultra_shared_posts')) || [];
-    sharedPool.push(sharedData);
-    localStorage.setItem('journal_ultra_shared_posts', JSON.stringify(sharedPool));
-
-    toast("success", "Shared!", `Entry "${entry.title}" sent to ${friendEmail}`);
-}
+// Load shared inbox (from backend)
+window.loadSharedInbox = async function() {
+  const currentUser = readCurrent();
+  if (!currentUser) return;
+  
+  try {
+    const response = await fetch(`${API_URL}/api/shared/inbox`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userEmail: currentUser.email })
+    });
+    
+    const data = await response.json();
+    const container = document.getElementById("sharedInboxContainer");
+    if (!container) return;
+    
+    const shared = data.shared || [];
+    
+    if (shared.length === 0) {
+      container.innerHTML = '<p class="muted" style="text-align:center; padding:20px;">No entries shared with you yet.</p>';
+      return;
+    }
+    
+    container.innerHTML = shared.map(post => `
+      <div class="card" style="margin-bottom: 10px; border-left: 3px solid var(--primary);">
+        <div style="display:flex; justify-content:space-between;">
+          <small>From: <b>${escapeHtml(post.fromEmail)}</b></small>
+          <small class="muted">${new Date(post.sharedAt).toLocaleDateString()}</small>
+        </div>
+        <h4 style="margin: 8px 0;">${escapeHtml(post.title)}</h4>
+        <p style="font-size: 0.9rem;">${escapeHtml(post.body)}</p>
+        ${post.image ? `<img src="${post.image}" style="width:100px; border-radius:5px; margin-top:5px;"/>` : ''}
+      </div>
+    `).join('');
+    
+  } catch (error) {
+    console.error("Load shared inbox error:", error);
+  }
+};
 
 /* ---------- Boot ---------- */
 window.addEventListener("load", async () => {
@@ -2132,8 +2168,6 @@ window.addEventListener("load", async () => {
         $("email").value = cur.email;
         toast("warn","Session found","Enter password + PIN to unlock.");
     }
-
-    if (window.checkIncomingRequests) window.checkIncomingRequests();
 });
 </script>
 </body>
