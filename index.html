@@ -1252,7 +1252,7 @@ async function handleRecovery(){
 }
 
 /* ---------- Login / Signup ---------- */
-let sessionPassword = ""; // held in memory for encrypt/decrypt in this session only
+let sessionPassword = "";
 
 $("authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -1324,7 +1324,7 @@ $("authForm").addEventListener("submit", async (e) => {
     if(passHash !== u.passHash || pinHash !== u.pinHash){
       u.failed = (u.failed || 0) + 1;
       if(u.failed >= 5){
-        u.lockUntil = Date.now() + 60_000; // 1 minute lock after 5 attempts
+        u.lockUntil = Date.now() + 60_000;
         u.failed = 0;
       }
       users[idx] = u;
@@ -1369,7 +1369,6 @@ async function hydrateUserUI(){
   $("topAvatar").src  = me.photo || fallback;
 
   $("pinText").innerText = "••••••";
-  $("pinToggle").className = "fas fa-eye";
   pinHidden = true;
 }
 
@@ -1386,13 +1385,25 @@ function closeDrawer(){
   $("drawerBackdrop").classList.remove("show");
 }
 function showView(v){
-  ["home","diary","stats","settings"].forEach(id => $("view-"+id).classList.add("hidden"));
-  $("view-"+v).classList.remove("hidden");
+  ["home","diary","stats","friends","settings"].forEach(id => {
+    const el = $("view-"+id);
+    if(el) el.classList.add("hidden");
+  });
+  const targetView = $("view-"+v);
+  if(targetView) targetView.classList.remove("hidden");
+  
   document.querySelectorAll(".nav a").forEach(a => a.classList.remove("active"));
-  $("nav-"+v).classList.add("active");
+  const navItem = $("nav-"+v);
+  if(navItem) navItem.classList.add("active");
+  
   if(window.innerWidth <= 820) closeDrawer();
 
   if(v === "stats") updateStats();
+  if(v === "friends") {
+    if(window.checkIncomingRequests) window.checkIncomingRequests();
+    if(window.renderFriendsList) window.renderFriendsList();
+    if(window.renderSharedInbox) window.renderSharedInbox();
+  }
 }
 
 /* ---------- Current user ---------- */
@@ -1411,14 +1422,12 @@ async function openVault(){
   const me = getUser();
   if(!me) return { posts: [] };
 
-  // vault shape: {iv, data}
   if(!me.vault || !me.vault.iv || !me.vault.data){
     return { posts: [] };
   }
   try{
     return await decryptJson(me.vault, sessionPassword, me.kdfSalt);
   }catch(err){
-    // wrong password in memory or corrupted storage
     toast("danger","Decrypt failed","Could not open encrypted diary. Logging out for safety.");
     logout(false);
     throw err;
@@ -1444,11 +1453,8 @@ function togglePinVisibility(){
 
   pinHidden = !pinHidden;
 
-  // Get the actual PIN from user data (stored as pinHash, cannot reverse)
-  // Instead of showing the PIN (which is hashed), we show a message
   const pinDisplay = pinHidden ? "••••••" : "PIN is hashed for security";
   
-  // Update UI
   const pinTextEl = document.getElementById("pinText");
   const pinIconEl = document.getElementById("pinToggleIcon");
   
@@ -1462,7 +1468,6 @@ function togglePinVisibility(){
 
   if(!pinHidden){
     toast("info", "Security Info", "Your PIN is stored as a hash and cannot be displayed for security reasons.");
-    // Auto-hide after 3 seconds
     setTimeout(() => {
       if (!pinHidden) {
         pinHidden = true;
@@ -1482,7 +1487,7 @@ function normalizeEntry(e){
     body: String(e.body || ""),
     mood: e.mood || "😐 Neutral",
     tags: Array.isArray(e.tags) ? e.tags : [],
-    date: e.date || nowIso.slice(0,10), // YYYY-MM-DD
+    date: e.date || nowIso.slice(0,10),
     createdAt: e.createdAt || nowIso,
     editedAt: e.editedAt || "",
     image: e.image || null
@@ -1553,22 +1558,12 @@ function closeAbout(){ $("aboutBackdrop").style.display = "none"; }
 
 function basicMarkdownToHtml(text){
   let t = escapeHtml(text);
-
-  // headings
   t = t.replace(/^###\s(.+)$/gm, "<h3>$1</h3>");
   t = t.replace(/^##\s(.+)$/gm, "<h2>$1</h2>");
   t = t.replace(/^#\s(.+)$/gm, "<h1>$1</h1>");
-
-  // blockquote
   t = t.replace(/^>\s(.+)$/gm, "<blockquote>$1</blockquote>");
-
-  // bold
   t = t.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
-
-  // inline code
   t = t.replace(/`([^`]+)`/g, "<code>$1</code>");
-
-  // newlines
   t = t.replace(/\n/g, "<br>");
   return t;
 }
@@ -1680,11 +1675,11 @@ async function renderDiary(){
             <div class="chips">${tags}</div>
           </div>
           <div class="entry-actions">
-            <button class="iconbtn" title="Share with Friend" onclick="shareToFriend('${p.id}')">
+            <button class="iconbtn" title="Share with Friend" onclick='shareToFriend("${p.id}")'>
                 <i class="fas fa-paper-plane"></i>
             </button>
-            <button class="iconbtn" title="Edit" onclick="editEntry('${p.id}')"><i class="fas fa-pen"></i></button>
-            <button class="iconbtn danger" title="Delete" onclick="deleteEntry('${p.id}')"><i class="fas fa-trash"></i></button>
+            <button class="iconbtn" title="Edit" onclick='editEntry("${p.id}")'><i class="fas fa-pen"></i></button>
+            <button class="iconbtn danger" title="Delete" onclick='deleteEntry("${p.id}")'><i class="fas fa-trash"></i></button>
           </div>
         </div>
       </div>
@@ -1709,8 +1704,12 @@ async function deleteEntry(id){
   await refreshAll();
 }
 
-/* ---------- Stats ---------- */
+/* ---------- Stats (FIXED) ---------- */
 async function updateStats(){
+  // Check if user is logged in first
+  const me = getUser();
+  if (!me) return;
+  
   const vault = await openVault();
   const posts = (vault.posts || []).map(normalizeEntry);
   $("kpiTotal").innerText = String(posts.length);
@@ -1728,18 +1727,24 @@ async function updateStats(){
 
   // this month
   const now = new Date();
-  const ym = now.toISOString().slice(0,7); // YYYY-MM
+  const ym = now.toISOString().slice(0,7);
   const thisMonth = posts.filter(p => (p.date || "").slice(0,7) === ym).length;
   $("kpiThisMonth").innerText = String(thisMonth);
 
-  drawChart(posts);
+  // Check if chart element exists before drawing
+  const chartElement = $("chart");
+  if (chartElement) {
+    drawChart(posts);
+  }
 }
 
 function drawChart(posts){
   const c = $("chart");
+  if (!c) return; // Exit if chart element doesn't exist
+  
   const ctx = c.getContext("2d");
+  if (!ctx) return; // Exit if canvas context not available
 
-  // device pixel ratio scaling for crispness
   const dpr = window.devicePixelRatio || 1;
   const cssW = c.clientWidth || 600;
   const cssH = c.clientHeight || 160;
@@ -1747,7 +1752,6 @@ function drawChart(posts){
   c.height = Math.floor(cssH * dpr);
   ctx.scale(dpr, dpr);
 
-  // build last 12 months buckets
   const now = new Date();
   const labels = [];
   const counts = [];
@@ -1761,14 +1765,12 @@ function drawChart(posts){
   const W = cssW, H = cssH;
   ctx.clearRect(0,0,W,H);
 
-  // axes
   const pad = 18;
   const max = Math.max(1, ...counts);
   const barW = (W - pad*2) / counts.length;
 
-  // grid lines
   ctx.globalAlpha = 0.25;
-  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--border");
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--border") || "#ccc";
   for(let i=0;i<=4;i++){
     const y = pad + (H - pad*2) * (i/4);
     ctx.beginPath();
@@ -1778,7 +1780,6 @@ function drawChart(posts){
   }
   ctx.globalAlpha = 1;
 
-  // bars (default fill style, no explicit color requirement)
   for(let i=0;i<counts.length;i++){
     const v = counts[i];
     const bh = (H - pad*2) * (v / max);
@@ -1786,7 +1787,6 @@ function drawChart(posts){
     const y = H - pad - bh;
     const bw = Math.max(6, barW - 12);
 
-    // subtle bar fill based on current theme via rgba from primary
     const primary = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() || "#10b981";
     ctx.fillStyle = hexToRgba(primary, 0.6);
     ctx.fillRect(x, y, bw, bh);
@@ -1795,9 +1795,8 @@ function drawChart(posts){
     ctx.fillRect(x, y+bh-3, bw, 3);
   }
 
-  // label minimal (first, middle, last)
-  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--muted");
-  ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--muted") || "#64748b";
+  ctx.font = "12px system-ui";
   const showIdx = new Set([0, 5, 11]);
   labels.forEach((lab,i)=>{
     if(!showIdx.has(i)) return;
@@ -1805,6 +1804,7 @@ function drawChart(posts){
     ctx.fillText(lab, x, H - 4);
   });
 }
+
 function hexToRgba(hex, a){
   const h = hex.replace("#","").trim();
   const full = h.length===3 ? h.split("").map(c=>c+c).join("") : h.padEnd(6,"0").slice(0,6);
@@ -1848,7 +1848,6 @@ async function exportData(){
   const me = getUser();
   if(!me) return;
 
-  // export encrypted vault; no password included
   const payload = {
     exportedAt: new Date().toISOString(),
     app: "My Life Journal",
@@ -1890,7 +1889,6 @@ function importData(event){
       const incoming = data.user;
       const idx = users.findIndex(u => u.email === String(incoming.email).toLowerCase());
 
-      // For safety, import exactly as is (still encrypted); you must know the password to decrypt after login.
       const imported = {
         id: incoming.id || uuid(),
         name: incoming.name || "User",
@@ -1949,7 +1947,6 @@ async function refreshAll(){
 
 /* ---------- Keyboard shortcuts ---------- */
 document.addEventListener("keydown", (e) => {
-  // Ctrl+K quick focus/open editor from app
   if(e.ctrlKey && e.key.toLowerCase() === "k"){
     const inApp = $("app").style.display !== "none";
     if(inApp){
@@ -1957,7 +1954,6 @@ document.addEventListener("keydown", (e) => {
       openEditor();
     }
   }
-  // Editor shortcuts
   if($("editorBackdrop").style.display === "flex"){
     if(e.key === "Escape"){
       e.preventDefault();
@@ -1970,6 +1966,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+/* ---------- Friends System Functions ---------- */
 window.renderSharedInbox = function() {
     const currentUser = readCurrent();
     if (!currentUser) return;
@@ -1980,7 +1977,7 @@ window.renderSharedInbox = function() {
     if (!container) return;
 
     const myInbox = sharedPool.filter(post => 
-        post.to.toLowerCase().trim() === currentUser.email.toLowerCase().trim()
+        post.to && post.to.toLowerCase().trim() === currentUser.email.toLowerCase().trim()
     );
 
     if (myInbox.length === 0) {
@@ -1991,80 +1988,24 @@ window.renderSharedInbox = function() {
     container.innerHTML = myInbox.map(post => `
         <div class="card" style="background: rgba(255,255,255,0.05); margin-bottom: 10px; border-left: 3px solid var(--primary);">
             <div style="display:flex; justify-content:space-between;">
-                <small>From: <b>${post.from}</b></small>
+                <small>From: <b>${escapeHtml(post.from)}</b></small>
                 <small class="muted">${new Date(post.sharedAt).toLocaleDateString()}</small>
             </div>
-            <h4 style="margin: 8px 0;">${post.title}</h4>
-            <p style="font-size: 0.9rem;">${post.body}</p>
+            <h4 style="margin: 8px 0;">${escapeHtml(post.title)}</h4>
+            <p style="font-size: 0.9rem;">${escapeHtml(post.body)}</p>
             ${post.image ? `<img src="${post.image}" style="width:100px; border-radius:5px; margin-top:5px;"/>` : ''}
         </div>
     `).join('');
 };
 
-/* ------------ FRIENDS SYSTEM (GLOBAL) -----------*/
-
-// 1. Navigation & View Switcher
-window.showView = function(tab) {
-    const views = ['home', 'diary', 'stats', 'settings', 'friends']; 
-    views.forEach(v => {
-        const el = $( 'view-' + v);
-        const nav = $( 'nav-' + v); 
-        if(el) el.classList.add('hidden');
-        if(nav) nav.classList.remove('active');
-    });
-
-    const targetView = $('view-' + tab);
-    const targetNav = $('nav-' + tab);
-    if(targetView) targetView.classList.remove('hidden');
-    if(targetNav) targetNav.classList.add('active');
-
-    if(window.innerWidth <= 820) closeDrawer();
-
-    if (tab === 'friends') {
-        window.checkIncomingRequests(); 
-        window.renderFriendsList();
-    }
-    if (tab === "stats") updateStats();
-    if (tab === 'friends') {
-        // This forces the box to check for new messages every time you click "Friends"
-        if (window.renderSharedInbox) window.renderSharedInbox();
-    }
-};
-
-// 2. Action: Send Friend Request
-window.addFriendAction = function() {
-    const emailInput = $("friendEmail");
-    const targetEmail = emailInput.value.trim().toLowerCase();
-    const currentUser = readCurrent();
-    const allUsers = readUsers();
-
-    if (!targetEmail) return toast("danger", "Error", "Please enter an email.");
-    if (targetEmail === currentUser.email.toLowerCase()) return toast("danger", "Error", "You cannot add yourself.");
-
-    const foundUser = allUsers.find(u => u.email.toLowerCase() === targetEmail);
-    if (!foundUser) return toast("danger", "Not Found", "User does not exist.");
-
-    let requests = JSON.parse(localStorage.getItem('journal_ultra_requests')) || [];
-    if (requests.find(r => r.from === currentUser.email && r.to === targetEmail)) {
-        return toast("warn", "Pending", "Request already sent.");
-    }
-
-    requests.push({ from: currentUser.email, to: targetEmail, status: 'pending', timestamp: Date.now() });
-    localStorage.setItem('journal_ultra_requests', JSON.stringify(requests));
-    
-    toast("success", "Success", "Request sent to " + (foundUser.name || targetEmail));
-    emailInput.value = "";
-};
-
-// 3. UI: Render Pending Requests
 window.checkIncomingRequests = function() {
     const currentUser = readCurrent();
     if (!currentUser) return;
     const allRequests = JSON.parse(localStorage.getItem('journal_ultra_requests')) || [];
     const myEmail = currentUser.email.toLowerCase().trim();
 
-    const myIncoming = allRequests.filter(req => req.to.toLowerCase().trim() === myEmail && req.status === 'pending');
-    const container = $("pendingRequests");
+    const myIncoming = allRequests.filter(req => req.to && req.to.toLowerCase().trim() === myEmail && req.status === 'pending');
+    const container = document.getElementById("pendingRequests");
     if (!container) return;
 
     if (myIncoming.length === 0) {
@@ -2080,7 +2021,6 @@ window.checkIncomingRequests = function() {
     `).join('');
 };
 
-// 4. Action: Accept Friend
 window.acceptFriend = function(senderEmail) {
     let allRequests = JSON.parse(localStorage.getItem('journal_ultra_requests')) || [];
     const currentUser = readCurrent();
@@ -2096,17 +2036,16 @@ window.acceptFriend = function(senderEmail) {
     window.renderFriendsList(); 
 };
 
-// 5. UI: Render Confirmed Friends
 window.renderFriendsList = function() {
     const currentUser = readCurrent();
     const allRequests = JSON.parse(localStorage.getItem('journal_ultra_requests')) || [];
-    const listContainer = $("confirmedFriendsList");
+    const listContainer = document.getElementById("confirmedFriendsList");
     if (!listContainer || !currentUser) return;
 
     const myFriends = allRequests.filter(req => {
         return req.status === 'accepted' && 
-               (req.to.toLowerCase() === currentUser.email.toLowerCase() || 
-                req.from.toLowerCase() === currentUser.email.toLowerCase());
+               (req.to === currentUser.email || 
+                req.from === currentUser.email);
     });
 
     if (myFriends.length === 0) {
@@ -2115,7 +2054,7 @@ window.renderFriendsList = function() {
     }
 
     listContainer.innerHTML = myFriends.map(req => {
-        const friendEmail = req.from.toLowerCase() === currentUser.email.toLowerCase() ? req.to : req.from;
+        const friendEmail = req.from === currentUser.email ? req.to : req.from;
         return `
             <div style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid var(--border);">
                 <div style="width: 35px; height: 35px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
@@ -2126,26 +2065,6 @@ window.renderFriendsList = function() {
         `;
     }).join('');
 };
-
-async function shareWithFriend(postId) {
-    const friendEmail = prompt("Enter friend's email:");
-    if (!friendEmail) return;
-
-    const vault = await openVault();
-    const entry = vault.posts.find(p => p.id === postId);
-
-    const sharedEntry = {
-        from: getUser().email,
-        to: friendEmail.toLowerCase(),
-        content: entry, // This sends the title, body, and mood
-        timestamp: Date.now()
-    };
-
-    let pool = JSON.parse(localStorage.getItem('journal_ultra_shared')) || [];
-    pool.push(sharedEntry);
-    localStorage.setItem('journal_ultra_shared', JSON.stringify(pool));
-    toast("success", "Sent!", "Entry shared with " + friendEmail);
-}
 
 async function shareToFriend(postId) {
     const friendEmail = prompt("Enter the friend's email to share this entry:");
@@ -2184,9 +2103,8 @@ window.addEventListener("load", async () => {
         toast("warn","Session found","Enter password + PIN to unlock.");
     }
 
-if (window.checkIncomingRequests) window.checkIncomingRequests();
-  });
+    if (window.checkIncomingRequests) window.checkIncomingRequests();
+});
 </script>
-<script src="app.js"></script>
 </body>
 </html>
