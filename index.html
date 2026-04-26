@@ -983,8 +983,102 @@ const LS_USERS = "journal_ultra_users";
 const LS_CURRENT = "journal_ultra_current";
 const LS_THEME = "journal_ultra_theme";
 
-const $ = (id) => document.getElementById(id);
+const LS_USERS = "journal_ultra_users";
+const LS_CURRENT = "journal_ultra_current";
+const LS_THEME = "journal_ultra_theme";
 
+// ========== BACKEND API CONFIGURATION ==========
+const API_URL = window.location.origin;
+
+async function syncToBackend() {
+  const currentUser = readCurrent();
+  if (!currentUser || !currentUser.email) return;
+  
+  try {
+    const response = await fetch(`${API_URL}/api/sync/pull`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: currentUser.email })
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.encryptedVault && data.encryptedVault.iv) {
+        const users = readUsers();
+        const userIndex = users.findIndex(u => u.email === currentUser.email);
+        if (userIndex !== -1) {
+          users[userIndex].vault = data.encryptedVault;
+          writeUsers(users);
+        }
+      }
+    }
+  } catch (error) {
+    console.log("Backend sync not available, using localStorage only");
+  }
+}
+
+const originalSaveVault = saveVault;
+saveVault = async function(vault) {
+  await originalSaveVault(vault);
+  
+  const currentUser = readCurrent();
+  if (currentUser && currentUser.email) {
+    try {
+      await fetch(`${API_URL}/api/sync/push`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email: currentUser.email, 
+          encryptedVault: getUser()?.vault 
+        })
+      });
+    } catch(e) { /* Backend not available */ }
+  }
+};
+
+const originalAddFriendAction = window.addFriendAction;
+window.addFriendAction = async function() {
+  const currentUser = readCurrent();
+  if (!currentUser) {
+    return originalAddFriendAction();
+  }
+  
+  const emailInput = document.getElementById("friendEmail");
+  const targetEmail = emailInput.value.trim().toLowerCase();
+  
+  if (!targetEmail) return toast("danger", "Error", "Please enter an email.");
+  if (targetEmail === currentUser.email.toLowerCase()) return toast("danger", "Error", "You cannot add yourself.");
+  
+  try {
+    const response = await fetch(`${API_URL}/api/friends/request`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userEmail: currentUser.email, friendEmail: targetEmail })
+    });
+    
+    if (response.ok) {
+      toast("success", "Sent", "Friend request sent!");
+      emailInput.value = "";
+      originalAddFriendAction();
+    } else {
+      const data = await response.json();
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    originalAddFriendAction();
+  }
+};
+
+setInterval(() => {
+  const currentUser = readCurrent();
+  if (currentUser && document.getElementById("app").style.display !== "none") {
+    syncToBackend();
+  }
+}, 30000);
+// ========== END BACKEND API CONFIGURATION ==========
+
+const $ = (id) => document.getElementById(id);
+  
 function toast(type, title, msg){
   const wrap = $("toastWrap");
   const el = document.createElement("div");
