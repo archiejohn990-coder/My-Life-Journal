@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect("mongodb+srv://Archie:<db_password>@cluster0.7e4s845.mongodb.net/?appName=Cluster0")
+mongoose.connect("MONGO_URL=mongodb://atlas-sql-69ee08b8a25dbc0359f74e25-gw0snx.a.query.mongodb.net/sample_mflix?ssl=true&authSource=admin")
 .then(() => console.log("MongoDB Connected"))
 .catch(err => console.log(err));
 
