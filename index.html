@@ -942,43 +942,45 @@ html {
         </div>
         <br>
         <div class="card notice" style="margin:0;">
-
           <h3>Our Team</h3>
-
-  <div class="team">
-
-    <div class="member">
-      <a href="https://www.facebook.com/carlonuyda7" target="_blank">
-      <img src="/Team/Carlo.jpg" Alt="Carlo"></a>
-      <p1> Carlo Nuyda</p1>
-    </div>
-
-    <div class="member">
-      <a href="https://www.facebook.com/yurievillacorte" target="_blank">
-      <img src="/Team/Yurie.jpg" Alt="Yurie"></a>
-      <p1> Yurie Villacorte</p1>
-    </div>
-
-    <div class="member">
-      <a href="https://www.facebook.com/archie.jhon.gregorio" target="_blank">
-      <img src="/Team/Archie.jpg" Alt="Archie"></a>
-      <p1> Archie Jhon Gregorio</p1>
-    </div>
-
-    <div class="member">
-      <a href="https://www.facebook.com/kyle.serapia.507" target="_blank">
-      <img src="/Team/Daisy.jpg" alt="Daisy"></a>
-      <p1>Daisy Serapia</p1>
-    </div>
-
-    <div class="member">
-      <a href="https://www.facebook.com/trishan.laurito.2025" target="_blank">
-      <img src="/Team/Trishan.jpg" alt="Trishan"></a>
-      <p1>Trishan Laurito</p1>
+          <div class="team">
+            <div class="member">
+              <a href="https://www.facebook.com/carlonuyda7" target="_blank">
+                <img src="https://ui-avatars.com/api/?background=10b981&color=fff&name=Carlo&size=100" alt="Carlo">
+              </a>
+              <p>Carlo Nuyda</p>
+            </div>
+            <div class="member">
+              <a href="https://www.facebook.com/yurievillacorte" target="_blank">
+                <img src="https://ui-avatars.com/api/?background=0ea5e9&color=fff&name=Yurie&size=100" alt="Yurie">
+              </a>
+              <p>Yurie Villacorte</p>
+            </div>
+            <div class="member">
+              <a href="https://www.facebook.com/archie.jhon.gregorio" target="_blank">
+                <img src="https://ui-avatars.com/api/?background=10b981&color=fff&name=Archie&size=100" alt="Archie">
+              </a>
+              <p>Archie Jhon Gregorio</p>
+            </div>
+            <div class="member">
+              <a href="https://www.facebook.com/kyle.serapia.507" target="_blank">
+                <img src="https://ui-avatars.com/api/?background=f59e0b&color=fff&name=Daisy&size=100" alt="Daisy">
+              </a>
+              <p>Daisy Serapia</p>
+            </div>
+            <div class="member">
+              <a href="https://www.facebook.com/trishan.laurito.2025" target="_blank">
+                <img src="https://ui-avatars.com/api/?background=ef4444&color=fff&name=Trishan&size=100" alt="Trishan">
+              </a>
+              <p>Trishan Laurito</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-<script>
+  <script>
 const LS_USERS = "journal_ultra_users";
 const LS_CURRENT = "journal_ultra_current";
 const LS_THEME = "journal_ultra_theme";
@@ -1074,7 +1076,7 @@ setInterval(() => {
 // ========== END BACKEND API CONFIGURATION ==========
 
 const $ = (id) => document.getElementById(id);
-  
+
 function toast(type, title, msg){
   const wrap = $("toastWrap");
   const el = document.createElement("div");
@@ -1119,6 +1121,12 @@ function readCurrent(){ return JSON.parse(localStorage.getItem(LS_CURRENT) || "n
 function writeCurrent(obj){ localStorage.setItem(LS_CURRENT, JSON.stringify(obj)); }
 function uuid(){ return "id_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16); }
 function validPin(pin){ return /^[0-9]{6}$/.test(pin); }
+
+function bytesToB64(bytes){
+  let bin = "";
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
 
 let captchaCode = "";
 function generateCaptcha(){
@@ -2178,136 +2186,6 @@ window.addEventListener("load", async () => {
 
 if (window.checkIncomingRequests) window.checkIncomingRequests();
   });
-
-async function shareToFriend(postId) {
-    const friendEmail = prompt("Enter the friend's email (e.g., example@gmail.com):");
-    if (!friendEmail) return;
-
-    // 1. Get the entry from your encrypted vault
-    const vault = await openVault();
-    const entry = vault.posts.find(p => p.id === postId);
-    if (!entry) return toast("danger", "Error", "Entry not found.");
-
-    // 2. Create the shared data package
-    const sharedData = {
-        from: getUser().email,
-        to: friendEmail.toLowerCase().trim(),
-        title: entry.title,
-        body: entry.body,
-        mood: entry.mood,
-        date: entry.date,
-        tags: entry.tags,
-        image: entry.image, // Includes the image if one exists
-        timestamp: Date.now()
-    };
-
-    // 3. Save to a separate shared storage pool
-    let sharedPool = JSON.parse(localStorage.getItem('journal_ultra_shared_posts')) || [];
-    sharedPool.push(sharedData);
-    localStorage.setItem('journal_ultra_shared_posts', JSON.stringify(sharedPool));
-
-    toast("success", "Shared!", "Entry sent to " + friendEmail);
-}
-
-app.post('/api/friends/request', auth, (req, res) => {
-  const { email } = req.body;
-  const target = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
-
-  if(!target) return res.status(404).json({ error: 'User not found' });
-  if(target.id === req.user.id) return res.status(400).json({ error: 'Cannot add yourself' });
-
-  db.prepare(`
-    INSERT INTO friend_requests (from_user, to_user)
-    VALUES (?, ?)
-  `).run(req.user.id, target.id);
-
-  res.json({ ok: true });
-});
-
-app.post('/api/friends/accept', auth, (req, res) => {
-  const { requestId } = req.body;
-
-  const reqRow = db.prepare('SELECT * FROM friend_requests WHERE id = ?').get(requestId);
-  if(!reqRow) return res.status(404).json({ error: 'Request not found' });
-
-  db.prepare('UPDATE friend_requests SET status = ? WHERE id = ?')
-    .run('accepted', requestId);
-
-  db.prepare('INSERT INTO friends (user_id, friend_id) VALUES (?, ?)')
-    .run(reqRow.from_user, reqRow.to_user);
-
-  db.prepare('INSERT INTO friends (user_id, friend_id) VALUES (?, ?)')
-    .run(reqRow.to_user, reqRow.from_user);
-
-  res.json({ ok: true });
-});
-
-app.get('/api/friends', auth, (req, res) => {
-  const rows = db.prepare(`
-    SELECT u.id, u.name, u.email
-    FROM friends f
-    JOIN users u ON u.id = f.friend_id
-    WHERE f.user_id = ?
-  `).all(req.user.id);
-
-  res.json({ friends: rows });
-});
-
-app.get('/api/friends/requests', auth, (req, res) => {
-  const rows = db.prepare(`
-    SELECT fr.id, u.name, u.email
-    FROM friend_requests fr
-    JOIN users u ON u.id = fr.from_user
-    WHERE fr.to_user = ? AND fr.status = 'pending'
-  `).all(req.user.id);
-
-  res.json({ requests: rows });
-});
-
-async function addFriend(){
-  const email = prompt("Enter friend's email:");
-  if(!email) return;
-
-  try{
-    await api('/friends/request', {
-      method:'POST',
-      body: JSON.stringify({ email })
-    });
-    toast('', 'Sent', 'Friend request sent!');
-  }catch(err){
-    toast('danger','Error', err.message);
-  }
-}
-
-async function loadFriends(){
-  const out = await api('/friends');
-  const list = out.friends;
-
-  $("friendsList").innerHTML = list.map(f => `
-    <div class="card">${f.name} (${f.email})</div>
-  `).join('');
-}
-
-async function loadRequests(){
-  const out = await api('/friends/requests');
-
-  $("requestsList").innerHTML = out.requests.map(r => `
-    <div class="card">
-      ${r.name}
-      <button onclick="acceptReq(${r.id})">Accept</button>
-    </div>
-  `).join('');
-}
-
-async function acceptReq(id){
-  await api('/friends/accept', {
-    method:'POST',
-    body: JSON.stringify({ requestId:id })
-  });
-  loadRequests();
-  loadFriends();
-}
-
 </script>
 <script src="app.js"></script>
 </body>
