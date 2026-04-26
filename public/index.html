@@ -1126,15 +1126,30 @@ function validPin(pin){ return /^[0-9]{6}$/.test(pin); }
 
 let captchaCode = "";
 function generateCaptcha(){
-  captchaCode = Math.random().toString(36).substring(2,6).toUpperCase();
-  $("captchaBox").innerText = captchaCode;
-  $("captchaInp").value = "";
+  // Generate random 6-character code
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  captchaCode = code;
+  
+  const captchaBox = document.getElementById("captchaBox");
+  if (captchaBox) {
+    captchaBox.innerText = captchaCode;
+  }
+  
+  const captchaInp = document.getElementById("captchaInp");
+  if (captchaInp) {
+    captchaInp.value = "";
+  }
 }
 
-function bytesToB64(bytes){
-  let bin = "";
-  bytes.forEach(b => bin += String.fromCharCode(b));
-  return btoa(bin);
+// Also make sure captcha generates when page loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', generateCaptcha);
+} else {
+  generateCaptcha();
 }
 function b64ToBytes(b64){
   const bin = atob(b64);
