@@ -1228,9 +1228,62 @@ async function handleRecovery(){
   toggleRecovery(false);
 }
 
-/* ---------- Login / Signup ---------- */
+/* ---------- Login / Signup with BACKEND ---------- */
 let sessionPassword = "";
 
+// SIGNUP - saves to MongoDB (cloud, works across devices)
+async function signupUser(email, name, passwordHash, pinHash, kdfSalt, pinSalt){
+  try {
+    const response = await fetch(`${API_URL}/api/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email, name, passwordHash, pinHash, kdfSalt, pinSalt,
+        encryptedVault: { iv: "", data: "" }
+      })
+    });
+    
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+    
+    setCurrentUser(data);
+    sessionPassword = passwordHash;
+    $("authSection").style.display = "none";
+    $("app").style.display = "block";
+    await saveVault({ posts: [] });
+    await loadUserData();
+    showView("home");
+    toast("", "Success", "Account created!");
+  } catch (e) {
+    toast("danger", "Signup Failed", e.message);
+  }
+}
+
+// LOGIN - checks MongoDB (cloud, works across devices)
+async function loginUser(email, passwordHash, pinHash){
+  try {
+    const response = await fetch(`${API_URL}/api/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, passwordHash, pinHash })
+    });
+    
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+    
+    setCurrentUser(data);
+    sessionPassword = passwordHash;
+    $("authSection").style.display = "none";
+    $("app").style.display = "block";
+    await loadUserData();
+    showView("home");
+    toast("", "Welcome", "Logged in successfully");
+  } catch (e) {
+    toast("danger", "Login Failed", e.message);
+  }
+}
+
+// Form submit handler
 $("authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -1247,73 +1300,35 @@ $("authForm").addEventListener("submit", async (e) => {
   if(!pass) return toast("warn","Missing password","Please enter your password.");
   if(!validPin(pin)) return toast("warn","Invalid PIN","PIN must be exactly 6 digits.");
 
-  let users = readUsers();
-
   if(authMode === "signup"){
     const name = $("regName").value.trim();
     if(!name || name.length < 2) return toast("warn","Name required","Enter your full name.");
     if(pass.length < 8) return toast("warn","Weak password","Use at least 8 characters.");
 
-    if(users.some(u => u.email === email)){
-      return toast("danger","User exists","That email is already registered.");
-    }
-
     const kdfSalt = bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
-    const passHash = await sha256(pass + "|" + kdfSalt);
-
     const pinSalt = bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
+    const passwordHash = await sha256(pass + "|" + kdfSalt);
     const pinHash = await sha256(pin + "|" + pinSalt);
-
-    const newUser = {
-      id: uuid(),
-      name, email,
-      kdfSalt,
-      passHash,
-      pinSalt,
-      pinHash,
-      photo: null,
-      vault: await encryptJson({ posts: [] }, pass, kdfSalt),
-      failed: 0,
-      lockUntil: 0
-    };
-    users.push(newUser);
-    writeUsers(users);
-    toast("", "Account created", "Welcome! Logging you in…");
-    await login(email, pass);
+    
+    await signupUser(email, name, passwordHash, pinHash, kdfSalt, pinSalt);
   } else {
-    const idx = users.findIndex(u => u.email === email);
-    if(idx === -1){
-      generateCaptcha();
-      return toast("danger","Invalid credentials","Check your email, password, and PIN.");
+    // For login, we need to get user data first to get the salts
+    // Option 1: User must have logged in before (localStorage has salts)
+    // Option 2: Fetch salts from backend first
+    
+    // For now, check if user exists in localStorage for salts
+    let users = readUsers();
+    const user = users.find(u => u.email === email);
+    
+    if (!user) {
+      toast("danger", "Account Not Found", "Please sign up first or check your email");
+      return;
     }
-    const u = users[idx];
-
-    const now = Date.now();
-    if(u.lockUntil && now < u.lockUntil){
-      const secs = Math.ceil((u.lockUntil - now)/1000);
-      generateCaptcha();
-      return toast("warn","Temporarily locked", `Try again in ${secs}s.`);
-    }
-
-    const passHash = await sha256(pass + "|" + u.kdfSalt);
-    const pinHash  = await sha256(pin + "|" + u.pinSalt);
-
-    if(passHash !== u.passHash || pinHash !== u.pinHash){
-      u.failed = (u.failed || 0) + 1;
-      if(u.failed >= 5){
-        u.lockUntil = Date.now() + 60_000;
-        u.failed = 0;
-      }
-      users[idx] = u;
-      writeUsers(users);
-      generateCaptcha();
-      return toast("danger","Invalid credentials","Check your email, password, and PIN.");
-    }
-
-    u.failed = 0; u.lockUntil = 0;
-    users[idx] = u; writeUsers(users);
-    toast("", "Welcome back", "Logging you in…");
-    await login(email, pass);
+    
+    const passwordHash = await sha256(pass + "|" + user.kdfSalt);
+    const pinHash = await sha256(pin + "|" + user.pinSalt);
+    
+    await loginUser(email, passwordHash, pinHash);
   }
 });
 
@@ -1358,6 +1373,18 @@ async function hydrateUserUI(){
 
   $("pinText").innerText = "••••••";
   pinHidden = true;
+}
+
+async function loadUserData(){
+  const me = getUser();
+  if(!me) return;
+  $("userGreet").innerText = me.name || me.email.split("@")[0];
+  $("userEmailSmall").innerText = me.email;
+  $("profName").innerText = me.name || "User";
+  $("profEmail").innerText = me.email;
+  let avatarUrl = me.photo || `https://ui-avatars.com/api/?background=10b981&color=fff&name=${encodeURIComponent(me.name||"User")}`;
+  $("userAvatar").src = avatarUrl;
+  $("topAvatar").src = avatarUrl;
 }
 
 /* ---------- Drawer / Navigation ---------- */
@@ -1976,7 +2003,6 @@ window.addFriendAction = async function() {
     
     toast("success", "Sent", "Friend request sent!");
     emailInput.value = "";
-    
     checkIncomingRequests();
     
   } catch (error) {
