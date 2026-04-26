@@ -143,6 +143,28 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+// Find user by email (returns salts only for login)
+app.post("/api/user/find", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase() });
+    
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    // Only return what's needed for login (salts)
+    res.json({
+      email: user.email,
+      kdfSalt: user.kdfSalt,
+      pinSalt: user.pinSalt
+    });
+  } catch (err) {
+    console.error("Find user error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Update user data
 app.post("/api/user/update", async (req, res) => {
   try {
@@ -173,7 +195,7 @@ app.post("/api/user/update", async (req, res) => {
 });
 
 /* =========================
-   FRIEND SYSTEM ROUTES (FULLY ADDED)
+   FRIEND SYSTEM ROUTES
 ========================= */
 
 // Send friend request
