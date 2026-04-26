@@ -45,7 +45,6 @@
       border: 1px solid var(--border);
       border-left: 6px solid var(--primary);
       border-radius: 16px;
-      box-shadow: var(--shadow2);
       padding: 12px;
       display:flex; gap:10px; align-items:flex-start;
       animation: pop .18s ease;
@@ -53,8 +52,8 @@
     }
     .toast i{ margin-top:2px; color: var(--primary); }
     .toast .t-title{ font-weight:900; margin-bottom:2px; }
-    .toast .t-msg{ color: var(--muted); font-size:.9rem; line-height:1.25; }
-    .toast .x{ margin-left:auto; border:none; background:transparent; cursor:pointer; color: var(--muted); padding:4px 6px; border-radius:10px; }
+    .toast .t-msg{ color: var(--muted); font-size:.9rem; }
+    .toast .x{ margin-left:auto; background:transparent; border:none; cursor:pointer; color: var(--muted); padding:4px 6px; border-radius:10px; }
     .toast.danger{ border-left-color: var(--danger); }
     .toast.danger i{ color: var(--danger); }
     @keyframes pop{ from{ transform:translateY(6px); opacity:.2;} to{ transform:translateY(0); opacity:1;} }
@@ -110,7 +109,6 @@
       border:none; border-radius:14px;
       font-weight:900; cursor:pointer; color:white;
       background: linear-gradient(135deg, var(--primary), #22c55e);
-      box-shadow: 0 4px 12px rgba(16,185,129,.25);
     }
     .btn:hover{ transform: translateY(-1px); filter: brightness(1.02); }
     .captcha{
@@ -273,14 +271,6 @@
       .row{ flex-direction: column; }
     }
     textarea.input{ min-height: 100px; resize: vertical; }
-    .kbd{
-      font-family: monospace;
-      padding: 2px 6px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: color-mix(in oklab, var(--border) 12%, transparent);
-      font-size: 0.75rem;
-    }
     canvas{ width: 100%; height: 200px; border-radius: 16px; }
     .team{ display:flex; justify-content:center; gap:20px; flex-wrap:wrap; margin-top:20px; }
     .member{ text-align:center; }
@@ -476,14 +466,20 @@
   <script>
     // ==================== CONFIGURATION ====================
     const API_URL = window.location.origin;
-    const LS_USERS = "journal_users";
     const LS_CURRENT = "journal_current";
     const LS_THEME = "journal_theme";
 
     // ==================== UTILITIES ====================
     function $(id) { return document.getElementById(id); }
     function escapeHtml(str) { return String(str || "").replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-    function toast(type, title, msg) { let wrap=$("toastWrap"), el=document.createElement("div"); el.className="toast"+(type==="danger"?" danger":""); el.innerHTML=`<i class="fas ${type==="danger"?"fa-exclamation-triangle":"fa-check-circle"}"></i><div><div class="t-title">${escapeHtml(title)}</div><div class="t-msg">${escapeHtml(msg)}</div></div><button class="x" onclick="this.parentElement.remove()">✕</button>`; wrap.appendChild(el); setTimeout(()=>el.remove(),4000); }
+    function toast(type, title, msg) { 
+      let wrap=$("toastWrap"), el=document.createElement("div"); 
+      el.className="toast"+(type==="danger"?" danger":"");
+      let icon = type==="danger" ? "fa-exclamation-triangle" : "fa-check-circle";
+      el.innerHTML=`<i class="fas ${icon}"></i><div><div class="t-title">${escapeHtml(title)}</div><div class="t-msg">${escapeHtml(msg)}</div></div><button class="x" onclick="this.parentElement.remove()">✕</button>`; 
+      wrap.appendChild(el); 
+      setTimeout(()=>el.remove(),4000); 
+    }
     function uuid(){ return Date.now()+"-"+Math.random().toString(36).substr(2,9); }
 
     // Theme
@@ -577,6 +573,7 @@
         return await decryptJson(user.encryptedVault, sessionPassword, user.kdfSalt);
       }catch(e){ toast("danger","Decrypt Error","Wrong password? Logging out..."); logout(); return {posts:[]}; }
     }
+    
     async function saveVault(vault){
       let user = getCurrentUser();
       if(!user) return;
@@ -690,8 +687,35 @@
         if(!res.ok) throw new Error(data.error);
         toast("success","Sent","Friend request sent");
         $("friendEmail").value="";
+        loadPendingRequests();
+        loadFriendsList();
       }catch(e){ toast("danger","Error",e.message); }
     }
+    
+    async function loadPendingRequests(){
+      let current=getCurrentUser();
+      if(!current) return;
+      try{
+        let res=await fetch(`${API_URL}/api/friends/requests`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({userEmail:current.email})});
+        let data=await res.json();
+        let container=$("pendingRequests");
+        if(!data.requests||data.requests.length===0){ container.innerHTML="<p class='muted'>No pending requests</p>"; return; }
+        container.innerHTML=data.requests.map(r=>`<div class='card' style='display:flex; justify-content:space-between; align-items:center;'><span><strong>${escapeHtml(r.fromEmail)}</strong></span><button class='btn-inline' onclick='acceptFriendRequest("${r._id}")'>Accept</button></div>`).join("");
+      }catch(e){ console.error(e); }
+    }
+    
+    async function acceptFriendRequest(requestId){
+      let current=getCurrentUser();
+      try{
+        let res=await fetch(`${API_URL}/api/friends/accept`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({userEmail:current.email, requestId:requestId})});
+        let data=await res.json();
+        if(!res.ok) throw new Error(data.error);
+        toast("success","Accepted","Friend added!");
+        loadPendingRequests();
+        loadFriendsList();
+      }catch(e){ toast("danger","Error",e.message); }
+    }
+    
     async function shareToFriend(postId){
       let friendEmail=prompt("Enter friend's email:");
       if(!friendEmail) return;
@@ -706,6 +730,7 @@
         toast("success","Shared","Entry shared!");
       }catch(e){ toast("danger","Error",e.message); }
     }
+    
     async function loadSharedInbox(){
       let current=getCurrentUser();
       if(!current) return;
@@ -717,6 +742,7 @@
         container.innerHTML=data.shared.map(s=>`<div class='card'><small>From: ${escapeHtml(s.fromEmail)}</small><h4>${escapeHtml(s.title)}</h4><p>${escapeHtml(s.body)}</p>${s.image?`<img class='thumb' src='${s.image}'>`:""}</div>`).join("");
       }catch(e){ console.error(e); }
     }
+    
     async function loadFriendsList(){
       let current=getCurrentUser();
       if(!current) return;
@@ -729,133 +755,78 @@
       }catch(e){ console.error(e); }
     }
 
+    // Auto-sync functions
+    async function syncToCloud() {
+      const user = getCurrentUser();
+      if (!user) return;
+      try {
+        await fetch(`${API_URL}/api/sync/push`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: user.email, encryptedVault: user.encryptedVault })
+        });
+        console.log("✅ Synced to cloud");
+      } catch (e) { console.error("Sync failed:", e); }
+    }
+
+    async function checkForUpdates() {
+      const user = getCurrentUser();
+      if (!user) return;
+      try {
+        const res = await fetch(`${API_URL}/api/sync/pull`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: user.email })
+        });
+        const data = await res.json();
+        if (data.encryptedVault && data.encryptedVault.iv) {
+          user.encryptedVault = data.encryptedVault;
+          setCurrentUser(user);
+          await renderDiary();
+          toast("info", "Sync", "Updated from another device");
+        }
+      } catch (e) { console.error("Check updates failed:", e); }
+    }
+
     // Backup
     async function exportData(){ let user=getCurrentUser(); if(!user) return; let blob=new Blob([JSON.stringify(user)], {type:"application/json"}); let a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="journal-backup.json"; a.click(); }
-    async function importData(e){ let file=e.target.files[0]; if(!file) return; let r=new FileReader(); r.onload=async()=>{ try{ let data=JSON.parse(r.result); setCurrentUser(data); await loadUserData(); toast("","Imported","Restart to apply"); }catch(e){ toast("danger","Invalid file","Could not import"); } }; r.readAsText(file); }
+    async function importData(e){ let file=e.target.files[0]; if(!file) return; let r=new FileReader(); r.onload=async()=>{ try{ let data=JSON.parse(r.result); setCurrentUser(data); await loadUserData(); toast("","Imported","Restart to apply"); location.reload(); }catch(e){ toast("danger","Invalid file","Could not import"); } }; r.readAsText(file); }
     async function wipeMyData(){ if(!confirm("Delete ALL your data?")) return; let user=getCurrentUser(); if(user) await fetch(`${API_URL}/api/user/update`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email:user.email, encryptedVault:{iv:"",data:""}})}); localStorage.clear(); logout(); }
     async function uploadPhoto(e){ let f=e.target.files[0]; if(!f) return; let r=new FileReader(); r.onload=async()=>{ let user=getCurrentUser(); if(!user) return; user.photo=r.result; setCurrentUser(user); await fetch(`${API_URL}/api/user/update`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email:user.email, photo:r.result})}); await loadUserData(); toast("","Updated","Photo changed"); }; r.readAsDataURL(f); }
 
     // Navigation
-    function showView(v){ ["home","diary","stats","friends","settings"].forEach(vv=>{ let el=$("view-"+vv); if(el) el.classList.add("hidden"); }); $("view-"+v).classList.remove("hidden"); ["home","diary","stats","friends","settings"].forEach(vv=>{ let nav=$("nav-"+vv); if(nav) nav.classList.remove("active"); }); $("nav-"+v).classList.add("active"); if(v==="stats") updateStats(); if(v==="friends"){ loadSharedInbox(); loadFriendsList(); } if(window.innerWidth<=768) closeDrawer(); }
+    function showView(v){ 
+      ["home","diary","stats","friends","settings"].forEach(vv=>{ let el=$("view-"+vv); if(el) el.classList.add("hidden"); }); 
+      $("view-"+v).classList.remove("hidden"); 
+      ["home","diary","stats","friends","settings"].forEach(vv=>{ let nav=$("nav-"+vv); if(nav) nav.classList.remove("active"); }); 
+      $("nav-"+v).classList.add("active"); 
+      if(v==="stats") updateStats(); 
+      if(v==="friends"){ loadSharedInbox(); loadFriendsList(); loadPendingRequests(); } 
+      if(window.innerWidth<=768) closeDrawer(); 
+    }
     function toggleDrawer(){ $("sidebar").classList.toggle("open"); $("drawerBackdrop").classList.toggle("show"); }
     function closeDrawer(){ $("sidebar").classList.remove("open"); $("drawerBackdrop").classList.remove("show"); }
     function openAbout(){ $("aboutBackdrop").style.display="flex"; }
     function closeAbout(){ $("aboutBackdrop").style.display="none"; }
 
+    // Override saveVault to sync
+    const originalSaveVault = saveVault;
+    window.saveVault = async function(vault) {
+      await originalSaveVault(vault);
+      await syncToCloud();
+    };
+
     // Keyboard shortcuts
     document.addEventListener("keydown",(e)=>{ if(e.ctrlKey && e.key.toLowerCase()==="k"){ e.preventDefault(); if($("app").style.display!=="none") openEditor(); } if(e.key==="Escape" && $("editorBackdrop").style.display==="flex") closeEditor(); });
+
+    // Auto-sync interval
+    setInterval(checkForUpdates, 30000);
 
     // Init
     generateCaptcha();
     toggleMode("login");
     let savedUser=getCurrentUser();
     if(savedUser && savedUser.email){ $("email").value=savedUser.email; toast("info","Session","Enter password to unlock"); }
-    // Auto-sync function - call after every save
-async function syncToCloud() {
-  const user = getCurrentUser();
-  if (!user) return;
-  
-  const vault = await openVault();
-  try {
-    await fetch(`${API_URL}/api/sync/push`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: user.email,
-        encryptedVault: user.encryptedVault
-      })
-    });
-    console.log("✅ Synced to cloud");
-  } catch (e) {
-    console.error("Sync failed:", e);
-  }
-}
-
-// Check for updates from other devices
-async function checkForUpdates() {
-  const user = getCurrentUser();
-  if (!user) return;
-  
-  try {
-    const res = await fetch(`${API_URL}/api/sync/pull`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: user.email })
-    });
-    const data = await res.json();
-    
-    if (data.encryptedVault && data.encryptedVault.iv) {
-      // Update local vault from cloud
-      user.encryptedVault = data.encryptedVault;
-      setCurrentUser(user);
-      await renderDiary();
-      toast("info", "Sync", "Your data has been updated from another device");
-    }
-  } catch (e) {
-    console.error("Check updates failed:", e);
-  }
-}
-
-// Call checkForUpdates every 30 seconds
-setInterval(checkForUpdates, 30000);
-
-// Modify your save functions to sync
-const originalSaveVault = saveVault;
-window.saveVault = async function(vault) {
-  await originalSaveVault(vault);
-  await syncToCloud();
-};
-
-    // Add to your existing JavaScript in index.html
-
-// Auto-sync after every save
-const originalSaveVault = window.saveVault;
-window.saveVault = async function(vault) {
-  await originalSaveVault(vault);
-  
-  // Push to cloud
-  const user = getCurrentUser();
-  if (user && navigator.onLine) {
-    try {
-      await fetch(`${API_URL}/api/sync/push`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: user.email,
-          encryptedVault: user.encryptedVault
-        })
-      });
-      console.log("✅ Synced to cloud");
-    } catch (e) {
-      console.log("⚠️ Offline - will sync later");
-    }
-  }
-};
-
-// Check for updates every 30 seconds
-setInterval(async () => {
-  const user = getCurrentUser();
-  if (!user || !navigator.onLine) return;
-  
-  try {
-    const res = await fetch(`${API_URL}/api/sync/pull`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: user.email })
-    });
-    const data = await res.json();
-    
-    if (data.encryptedVault && data.encryptedVault.iv) {
-      // Update local from cloud
-      user.encryptedVault = data.encryptedVault;
-      localStorage.setItem(LS_CURRENT, JSON.stringify(user));
-      await renderDiary();
-      toast("info", "Sync", "Updated from another device");
-    }
-  } catch (e) {
-    // Silently fail
-  }
-}, 30000);
   </script>
 </body>
 </html>
