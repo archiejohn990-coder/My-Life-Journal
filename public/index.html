@@ -12,6 +12,9 @@
       --primary2:#0ea5e9;
       --danger:#ef4444;
       --warn:#f59e0b;
+      --success:#22c55e;
+      --offline:#94a3b8;
+      --online:#22c55e;
 
       --bg:#f1f5f9;
       --card:#ffffff;
@@ -41,6 +44,104 @@
     button,a,input,textarea,select{ transition:.18s ease; }
     a{ color: inherit; }
     .hidden{ display:none !important; }
+
+    /* Online Status Indicators */
+    .status-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: pulse 2s infinite;
+    }
+    .status-dot.online {
+      background-color: var(--online);
+      box-shadow: 0 0 5px var(--online);
+    }
+    .status-dot.offline {
+      background-color: var(--offline);
+      animation: none;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.95); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .friend-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+    }
+    .last-seen {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-left: 18px;
+    }
+    .friend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+    .friend-item:hover {
+      background: color-mix(in oklab, var(--border) 10%, transparent);
+    }
+    .friend-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+    .friend-avatar {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--primary);
+    }
+    .friend-details {
+      flex: 1;
+    }
+    .friend-name {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .friend-email {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .friend-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-icon {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+    .btn-unfriend {
+      background: color-mix(in oklab, var(--danger) 15%, transparent);
+      color: var(--danger);
+    }
+    .btn-unfriend:hover {
+      background: var(--danger);
+      color: white;
+      transform: translateY(-1px);
+    }
+    .btn-message {
+      background: color-mix(in oklab, var(--primary) 15%, transparent);
+      color: var(--primary);
+    }
+    .btn-message:hover {
+      background: var(--primary);
+      color: white;
+    }
 
     /* Toast */
     .toast-wrap{ position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:10px; z-index:99999; pointer-events:none;}
@@ -821,6 +922,7 @@ html {
             </div>
         </div>
     </div>
+    
     <div class="card" style="margin-top: 20px; border-left: 4px solid var(--primary);">
     <h3><i class="fas fa-envelope-open-text"></i> Shared with Me</h3>
     <div id="sharedInboxContainer">
@@ -830,13 +932,14 @@ html {
 
     <div class="card" style="margin-top: 20px;">
         <h3><i class="fas fa-bell"></i> Pending Requests</h3>
-        <div id="pendingRequests"></div> </div> </section>
-
-        <div class="card" style="margin-top: 20px; border-top: 4px solid #10b981;">
-        <h3><i class="fas fa-users"></i> My Friends</h3>
-        <div id="confirmedFriendsList">
-            </div>
+        <div id="pendingRequests"></div> 
     </div>
+    
+    <div class="card" style="margin-top: 20px; border-top: 4px solid #10b981;">
+        <h3><i class="fas fa-users"></i> My Friends <span id="onlineCount" style="font-size: 0.8rem; color: var(--success);"></span></h3>
+        <div id="confirmedFriendsList"></div>
+    </div>
+        </section>
 
         <!-- SETTINGS -->
         <section id="view-settings" class="hidden">
@@ -860,12 +963,12 @@ html {
               <div class="label" style="margin-top: 12px;">Email</div>
               <div style="font-weight: 850;" id="profEmail">Email</div>
 
-              <div class="label" style="margin-top: 12px;">Secret PIN</div>
-              <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:14px; background: color-mix(in oklab, var(--border) 8%, transparent); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
-                <span id="pinText">••••••</span>
-                <i id="pinToggle" class="fas fa-eye" onclick="togglePinVisibility()"></i>
-                <button class="iconbtn" type="button" onclick="togglePinVisibility()" title="Show/Hide PIN">
-                  <i class="fas fa-eye" id="pinToggle"></i>
+              <div class="label" style="margin-top: 12px;">Visibility</div>
+              <div class="friend-status" style="margin-top: 5px;">
+                <span class="status-dot online" id="myStatusDot"></span>
+                <span id="myStatusText">Online</span>
+                <button class="btn-ghost" style="margin-left: 10px; padding: 5px 10px;" onclick="toggleOnlineStatus()">
+                  Toggle Status
                 </button>
               </div>
 
@@ -1014,6 +1117,7 @@ html {
 const LS_USERS = "journal_ultra_users";
 const LS_CURRENT = "journal_ultra_current";
 const LS_THEME = "journal_ultra_theme";
+const LS_ONLINE_STATUS = "journal_ultra_online";
 
 const $ = (id) => document.getElementById(id);
 
@@ -1061,6 +1165,108 @@ function readCurrent(){ return JSON.parse(localStorage.getItem(LS_CURRENT) || "n
 function writeCurrent(obj){ localStorage.setItem(LS_CURRENT, JSON.stringify(obj)); }
 function uuid(){ return "id_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16); }
 function validPin(pin){ return /^[0-9]{6}$/.test(pin); }
+
+// Online/Offline Status Management
+function updateMyOnlineStatus(isOnline) {
+  const me = getUser();
+  if (!me) return;
+  
+  const status = {
+    email: me.email,
+    status: isOnline ? 'online' : 'offline',
+    lastSeen: new Date().toISOString()
+  };
+  
+  let onlineUsers = JSON.parse(localStorage.getItem(LS_ONLINE_STATUS) || "[]");
+  const existingIndex = onlineUsers.findIndex(u => u.email === me.email);
+  
+  if (existingIndex !== -1) {
+    onlineUsers[existingIndex] = status;
+  } else {
+    onlineUsers.push(status);
+  }
+  
+  localStorage.setItem(LS_ONLINE_STATUS, JSON.stringify(onlineUsers));
+  
+  // Update UI
+  const myStatusDot = $("myStatusDot");
+  const myStatusText = $("myStatusText");
+  if (myStatusDot && myStatusText) {
+    if (isOnline) {
+      myStatusDot.className = "status-dot online";
+      myStatusText.innerText = "Online";
+    } else {
+      myStatusDot.className = "status-dot offline";
+      myStatusText.innerText = "Offline";
+    }
+  }
+  
+  // Refresh friends list to show updated statuses
+  if (window.renderFriendsList) renderFriendsList();
+}
+
+function toggleOnlineStatus() {
+  const me = getUser();
+  if (!me) return;
+  
+  const onlineUsers = JSON.parse(localStorage.getItem(LS_ONLINE_STATUS) || "[]");
+  const myStatus = onlineUsers.find(u => u.email === me.email);
+  const isCurrentlyOnline = myStatus?.status === 'online';
+  
+  updateMyOnlineStatus(!isCurrentlyOnline);
+  toast("", "Status Updated", `You are now ${!isCurrentlyOnline ? 'Online' : 'Offline'}`);
+}
+
+function getFriendStatus(friendEmail) {
+  const onlineUsers = JSON.parse(localStorage.getItem(LS_ONLINE_STATUS) || "[]");
+  const friend = onlineUsers.find(u => u.email === friendEmail);
+  
+  if (friend && friend.status === 'online') {
+    return { status: 'online', lastSeen: null };
+  }
+  
+  return { status: 'offline', lastSeen: friend?.lastSeen || null };
+}
+
+function formatLastSeen(lastSeen) {
+  if (!lastSeen) return '';
+  const date = new Date(lastSeen);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+}
+
+// Start heartbeat to keep online status
+let heartbeatInterval = null;
+function startHeartbeat() {
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+  
+  // Set initial status
+  updateMyOnlineStatus(true);
+  
+  // Update status every 30 seconds
+  heartbeatInterval = setInterval(() => {
+    const me = getUser();
+    if (me) {
+      updateMyOnlineStatus(true);
+    }
+  }, 30000);
+}
+
+function stopHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+  updateMyOnlineStatus(false);
+}
 
 let captchaCode = "";
 function generateCaptcha(){
@@ -1269,6 +1475,9 @@ async function login(email, password){
   await hydrateUserUI();
   showView("home");
   await refreshAll();
+  
+  // Start online status heartbeat
+  startHeartbeat();
 
   toast("", "Welcome", "Session ready.");
 }
@@ -1845,6 +2054,7 @@ async function wipeMyData(){
   users = users.filter(u => u.email !== me.email);
   writeUsers(users);
   localStorage.removeItem(LS_CURRENT);
+  stopHeartbeat();
   toast("", "Deleted", "Your data was removed.");
   logout(false);
 }
@@ -1853,6 +2063,7 @@ async function wipeMyData(){
 function logout(showToast){
   if(showToast) toast("", "Logged out", "See you next time!");
   sessionPassword = "";
+  stopHeartbeat();
   localStorage.removeItem(LS_CURRENT);
   location.reload();
 }
@@ -1919,7 +2130,7 @@ function renderSharedInbox() {
 
 /* ------------ FRIENDS SYSTEM (GLOBAL) -----------*/
 
-// 2. Action: Send Friend Request
+// Action: Send Friend Request
 function addFriendAction() {
     const emailInput = $("friendEmail");
     const targetEmail = emailInput.value.trim().toLowerCase();
@@ -1946,7 +2157,7 @@ function addFriendAction() {
     emailInput.value = "";
 }
 
-// 3. UI: Render Pending Requests
+// UI: Render Pending Requests
 function checkIncomingRequests() {
     const currentUser = readCurrent();
     if (!currentUser) return;
@@ -1970,7 +2181,7 @@ function checkIncomingRequests() {
     `).join('');
 }
 
-// 4. Action: Accept Friend
+// Action: Accept Friend
 function acceptFriend(senderEmail) {
     let allRequests = JSON.parse(localStorage.getItem('journal_ultra_requests')) || [];
     const currentUser = readCurrent();
@@ -1988,7 +2199,26 @@ function acceptFriend(senderEmail) {
     renderFriendsList(); 
 }
 
-// 5. UI: Render Confirmed Friends
+// Action: Unfriend
+function unfriendFriend(friendEmail) {
+    if (!confirm(`Are you sure you want to unfriend ${friendEmail}?`)) return;
+    
+    const currentUser = readCurrent();
+    let allRequests = JSON.parse(localStorage.getItem('journal_ultra_requests')) || [];
+    
+    // Remove the friendship (delete the accepted request)
+    allRequests = allRequests.filter(req => {
+        const isThisFriendship = (req.from === currentUser.email && req.to === friendEmail) ||
+                                 (req.to === currentUser.email && req.from === friendEmail);
+        return !(isThisFriendship && req.status === 'accepted');
+    });
+    
+    localStorage.setItem('journal_ultra_requests', JSON.stringify(allRequests));
+    toast("", "Unfriended", `You are no longer friends with ${friendEmail}`);
+    renderFriendsList();
+}
+
+// UI: Render Confirmed Friends with Online Status
 function renderFriendsList() {
     const currentUser = readCurrent();
     if (!currentUser) return;
@@ -2004,27 +2234,61 @@ function renderFriendsList() {
     });
 
     if (myFriends.length === 0) {
-        listContainer.innerHTML = '<p class="muted" style="text-align:center; padding:10px;">No friends added yet.</p>';
+        listContainer.innerHTML = '<div class="card empty">No friends added yet. Send some requests!</div>';
+        const onlineCountSpan = $("onlineCount");
+        if (onlineCountSpan) onlineCountSpan.innerText = '';
         return;
     }
 
     const allUsers = readUsers();
-    listContainer.innerHTML = myFriends.map(req => {
+    let onlineCount = 0;
+    
+    const friendsHtml = myFriends.map(req => {
         const friendEmail = req.from.toLowerCase() === currentUser.email.toLowerCase() ? req.to : req.from;
         const friendData = allUsers.find(u => u.email.toLowerCase() === friendEmail.toLowerCase());
         const friendName = friendData ? friendData.name : friendEmail;
+        const status = getFriendStatus(friendEmail);
+        
+        if (status.status === 'online') onlineCount++;
         
         return `
-            <div style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid var(--border);">
-                <img src="${friendData?.photo || `https://ui-avatars.com/api/?background=10b981&color=fff&name=${friendEmail.charAt(0)}`}" 
-                     style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                <div>
-                    <div style="font-weight: 500;">${escapeHtml(friendName)}</div>
-                    <div class="muted" style="font-size: 0.8rem;">${escapeHtml(friendEmail)}</div>
+            <div class="friend-item">
+                <div class="friend-info">
+                    <img src="${friendData?.photo || `https://ui-avatars.com/api/?background=10b981&color=fff&name=${friendEmail.charAt(0)}`}" 
+                         class="friend-avatar" alt="avatar">
+                    <div class="friend-details">
+                        <div class="friend-name">${escapeHtml(friendName)}</div>
+                        <div class="friend-email">${escapeHtml(friendEmail)}</div>
+                        <div class="friend-status">
+                            <span class="status-dot ${status.status}"></span>
+                            <span>${status.status === 'online' ? 'Online' : 'Offline'}</span>
+                            ${status.status === 'offline' && status.lastSeen ? `<span class="last-seen">Last seen ${formatLastSeen(status.lastSeen)}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="friend-actions">
+                    <button class="btn-icon btn-message" onclick="messageFriend('${friendEmail}')" title="Send Message">
+                        <i class="fas fa-comment"></i>
+                    </button>
+                    <button class="btn-icon btn-unfriend" onclick="unfriendFriend('${friendEmail}')" title="Unfriend">
+                        <i class="fas fa-user-minus"></i>
+                    </button>
                 </div>
             </div>
         `;
     }).join('');
+    
+    listContainer.innerHTML = friendsHtml;
+    
+    const onlineCountSpan = $("onlineCount");
+    if (onlineCountSpan) {
+        onlineCountSpan.innerText = `(${onlineCount} online)`;
+    }
+}
+
+// Message friend (simple notification for now)
+function messageFriend(friendEmail) {
+    toast("info", "Message", `Messaging feature coming soon! You can share entries with ${friendEmail} using the share button on your diary entries.`);
 }
 
 async function shareToFriend(postId) {
@@ -2085,6 +2349,11 @@ window.addEventListener("load", async () => {
     }
 
     if(window.checkIncomingRequests) window.checkIncomingRequests();
+});
+
+// Clean up heartbeat on page unload
+window.addEventListener("beforeunload", () => {
+    stopHeartbeat();
 });
 
 </script>
