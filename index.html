@@ -1005,7 +1005,7 @@ html {
 
         <div class="field">
           <div class="label">Body (supports basic markdown: # heading, **bold**, `code`, > quote)</div>
-          <textarea id="eBody" class="input" placeholder="Write here..."></textarea>
+          <textarea id="eBody" class="input" placeholder="Write here..." rows="8"></textarea>
         </div>
 
         <div class="row">
@@ -1085,10 +1085,9 @@ html {
 
   <script>
     // API Configuration
-    const API_URL = window.location.origin; // Use same origin as the page
-
+    const API_URL = window.location.origin;
+    
     // Global variables
-    let sessionPassword = "";
     let currentUser = null;
     let authToken = localStorage.getItem('authToken');
     let heartbeatInterval = null;
@@ -1158,6 +1157,25 @@ html {
       }
     })();
 
+    // Markdown to HTML
+    function basicMarkdownToHtml(text) {
+      let t = escapeHtml(text);
+      t = t.replace(/^###\s(.+)$/gm, "<h3>$1</h3>");
+      t = t.replace(/^##\s(.+)$/gm, "<h2>$1</h2>");
+      t = t.replace(/^#\s(.+)$/gm, "<h1>$1</h1>");
+      t = t.replace(/^>\s(.+)$/gm, "<blockquote>$1</blockquote>");
+      t = t.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+      t = t.replace(/`([^`]+)`/g, "<code>$1</code>");
+      t = t.replace(/\n/g, "<br>");
+      return t;
+    }
+
+    function extractInlineTags(text) {
+      const matches = (text.match(/(^|\s)#([a-zA-Z0-9_\-]{2,})/g) || [])
+        .map(m => m.trim().replace("#", "").toLowerCase());
+      return Array.from(new Set(matches));
+    }
+
     // Login/Signup
     $("authForm").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -1188,8 +1206,12 @@ html {
           });
           const data = await response.json();
           if (data.success) {
-            toast("", "Account created", "Welcome! Logging you in...");
-            await login(email, password, pin);
+            authToken = data.token;
+            currentUser = data.user;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            toast("", "Account created", "Welcome!");
+            initApp();
           } else {
             toast("danger", "Error", data.error || "Signup failed");
           }
@@ -1197,41 +1219,40 @@ html {
           toast("danger", "Error", "Could not connect to server");
         }
       } else {
-        await login(email, password, pin);
+        try {
+          const response = await fetch(`${API_URL}/api/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password, pin })
+          });
+          const data = await response.json();
+          
+          if (data.success) {
+            authToken = data.token;
+            currentUser = data.user;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            toast("", "Welcome back", "Login successful!");
+            initApp();
+          } else {
+            toast("danger", "Login failed", data.error || "Invalid credentials");
+            generateCaptcha();
+          }
+        } catch (err) {
+          toast("danger", "Error", "Could not connect to server");
+          generateCaptcha();
+        }
       }
     });
 
-    async function login(email, password, pin) {
-      try {
-        const response = await fetch(`${API_URL}/api/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, pin })
-        });
-        const data = await response.json();
-        
-        if (data.success) {
-          sessionPassword = password;
-          authToken = data.token;
-          currentUser = data.user;
-          localStorage.setItem('authToken', authToken);
-          localStorage.setItem('currentUser', JSON.stringify(currentUser));
-          
-          $("authSection").style.display = "none";
-          $("app").style.display = "block";
-          
-          await hydrateUserUI();
-          showView("home");
-          startHeartbeat();
-          toast("", "Welcome", "Session ready.");
-        } else {
-          toast("danger", "Login failed", data.error || "Invalid credentials");
-          generateCaptcha();
-        }
-      } catch (err) {
-        toast("danger", "Error", "Could not connect to server");
-        generateCaptcha();
-      }
+    async function initApp() {
+      $("authSection").style.display = "none";
+      $("app").style.display = "block";
+      await hydrateUserUI();
+      showView("home");
+      startHeartbeat();
+      await renderDiary();
+      await updateStats();
     }
 
     async function hydrateUserUI() {
@@ -1250,7 +1271,6 @@ html {
     // Online Status Management
     async function updateMyOnlineStatus(isOnline) {
       if (!currentUser) return;
-      
       try {
         await fetch(`${API_URL}/api/status/update`, {
           method: "POST",
@@ -1258,30 +1278,17 @@ html {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${authToken}`
           },
-          body: JSON.stringify({ userId: currentUser.id, status: isOnline ? 'online' : 'offline' })
+          body: JSON.stringify({ status: isOnline ? 'online' : 'offline' })
         });
-        
-        const myStatusDot = $("myStatusDot");
-        const myStatusText = $("myStatusText");
-        if (myStatusDot && myStatusText) {
-          if (isOnline) {
-            myStatusDot.className = "status-dot online";
-            myStatusText.innerText = "Online";
-          } else {
-            myStatusDot.className = "status-dot offline";
-            myStatusText.innerText = "Offline";
-          }
-        }
       } catch (err) {
         console.error("Status update failed:", err);
       }
     }
 
     function toggleOnlineStatus() {
-      const myStatus = currentUser?.onlineStatus;
-      const isCurrentlyOnline = myStatus === 'online';
-      updateMyOnlineStatus(!isCurrentlyOnline);
-      toast("", "Status Updated", `You are now ${!isCurrentlyOnline ? 'Online' : 'Offline'}`);
+      const newStatus = currentUser?.onlineStatus !== 'online';
+      updateMyOnlineStatus(newStatus);
+      toast("", "Status Updated", `You are now ${newStatus ? 'Online' : 'Offline'}`);
     }
 
     function startHeartbeat() {
@@ -1339,11 +1346,368 @@ html {
     function openAbout() { $("aboutBackdrop").style.display = "flex"; }
     function closeAbout() { $("aboutBackdrop").style.display = "none"; }
 
+    // ==================== JOURNAL FEATURES ====================
+    
+    async function renderDiary() {
+      if (!currentUser) return;
+      
+      try {
+        const response = await fetch(`${API_URL}/api/journal/list`, {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        const data = await response.json();
+        let posts = data.entries || [];
+        
+        const term = ($("diarySearch").value || "").trim().toLowerCase();
+        const sortMode = $("sortMode").value;
+        const dateFilter = $("dateFilter").value;
+        const moodFilter = $("moodFilter").value;
+        
+        posts.sort((a, b) => sortMode === "oldest"
+          ? new Date(a.date) - new Date(b.date)
+          : new Date(b.date) - new Date(a.date)
+        );
+        
+        const filtered = posts.filter(p => {
+          const hay = (p.title + " " + p.body + " " + (p.tags || []).join(" ")).toLowerCase();
+          const okTerm = !term || hay.includes(term);
+          const okDate = !dateFilter || p.date === dateFilter;
+          const okMood = !moodFilter || p.mood === moodFilter;
+          return okTerm && okDate && okMood;
+        });
+        
+        $("entryCount").innerText = `${posts.length} entries`;
+        
+        if (filtered.length === 0) {
+          $("diaryContainer").innerHTML = `<div class="card empty">No matching entries found. Create your first entry!</div>`;
+          return;
+        }
+        
+        $("diaryContainer").innerHTML = filtered.map(p => {
+          const tags = (p.tags || []).slice(0, 8).map(t => `<span class="chip"><i class="fas fa-hashtag"></i> ${escapeHtml(t)}</span>`).join("");
+          const meta = `${escapeHtml(p.date)} • ${escapeHtml(p.mood)}${p.updatedAt !== p.createdAt ? " • edited" : ""}`;
+          const img = p.image ? `<img class="thumb" src="${p.image}" alt="attachment">` : "";
+          return `
+            <div class="card">
+              <div class="entry">
+                <div style="flex:1;">
+                  <small>${meta}</small>
+                  ${p.title ? `<h4>${escapeHtml(p.title)}</h4>` : ""}
+                  <p>${escapeHtml(p.body)}</p>
+                  ${img}
+                  <div class="chips">${tags}</div>
+                </div>
+                <div class="entry-actions">
+                  <button class="iconbtn" title="Share with Friend" onclick="shareEntry('${p._id}')">
+                    <i class="fas fa-paper-plane"></i>
+                  </button>
+                  <button class="iconbtn" title="Edit" onclick="editEntry('${p._id}')"><i class="fas fa-pen"></i></button>
+                  <button class="iconbtn danger" title="Delete" onclick="deleteEntry('${p._id}')"><i class="fas fa-trash"></i></button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("");
+      } catch (err) {
+        console.error("Failed to load diary:", err);
+        $("diaryContainer").innerHTML = `<div class="card empty">Error loading entries. Please refresh.</div>`;
+      }
+    }
+
+    function openEditor(entry = null) {
+      editingId = entry?._id || null;
+      $("editorTitle").innerText = editingId ? "Edit Entry" : "New Entry";
+      $("eTitle").value = entry?.title || "";
+      $("eMood").value = entry?.mood || "😐 Neutral";
+      $("eTags").value = (entry?.tags || []).join(", ");
+      $("eDate").value = entry?.date || new Date().toISOString().slice(0, 10);
+      $("eBody").value = entry?.body || "";
+      $("eImage").value = "";
+      editingImageB64 = entry?.image || null;
+      $("imagePreview").classList.toggle("hidden", !editingImageB64);
+      if (editingImageB64) $("imagePreview").src = editingImageB64;
+      updatePreview();
+      $("editorBackdrop").style.display = "flex";
+    }
+
+    function closeEditor() {
+      $("editorBackdrop").style.display = "none";
+      editingId = null;
+      editingImageB64 = null;
+    }
+
+    function updatePreview() {
+      const body = $("eBody").value || "";
+      $("preview").innerHTML = body.trim() ? basicMarkdownToHtml(body) : "Start typing to see preview…";
+    }
+    
+    $("eBody").addEventListener("input", updatePreview);
+
+    function loadEntryImage(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (file.size > 1000000) {
+        e.target.value = "";
+        return toast("warn", "Image too large", "Choose an image under ~1MB.");
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        editingImageB64 = reader.result;
+        $("imagePreview").src = editingImageB64;
+        $("imagePreview").classList.remove("hidden");
+        toast("", "Attached", "Image added to this entry.");
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function saveFromEditor() {
+      const title = ($("eTitle").value || "").trim();
+      const mood = $("eMood").value;
+      const date = $("eDate").value || new Date().toISOString().slice(0, 10);
+      const tags = ($("eTags").value || "").split(",").map(t => t.trim()).filter(Boolean).map(t => t.toLowerCase());
+      const body = ($("eBody").value || "").trim();
+      
+      if (!title && !body) return toast("warn", "Empty entry", "Add a title or body.");
+      
+      const inline = extractInlineTags(body);
+      const mergedTags = Array.from(new Set([...tags, ...inline]));
+      
+      try {
+        let response;
+        if (editingId) {
+          response = await fetch(`${API_URL}/api/journal/update/${editingId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ title, mood, date, tags: mergedTags, body, image: editingImageB64 || null })
+          });
+        } else {
+          response = await fetch(`${API_URL}/api/journal/create`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ title, mood, date, tags: mergedTags, body, image: editingImageB64 || null })
+          });
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+          toast("", editingId ? "Updated" : "Saved", editingId ? "Entry updated." : "New entry added.");
+          closeEditor();
+          await renderDiary();
+          await updateStats();
+        } else {
+          toast("danger", "Error", data.error || "Failed to save entry");
+        }
+      } catch (err) {
+        toast("danger", "Error", "Could not save entry");
+      }
+    }
+
+    async function editEntry(id) {
+      try {
+        const response = await fetch(`${API_URL}/api/journal/get/${id}`, {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        const data = await response.json();
+        if (data.entry) {
+          openEditor(data.entry);
+        }
+      } catch (err) {
+        toast("danger", "Error", "Could not load entry");
+      }
+    }
+
+    async function deleteEntry(id) {
+      if (!confirm("Delete this entry?")) return;
+      try {
+        const response = await fetch(`${API_URL}/api/journal/delete/${id}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        const data = await response.json();
+        if (data.success) {
+          toast("", "Deleted", "Entry removed.");
+          await renderDiary();
+          await updateStats();
+        } else {
+          toast("danger", "Error", data.error || "Failed to delete");
+        }
+      } catch (err) {
+        toast("danger", "Error", "Could not delete entry");
+      }
+    }
+
+    async function quickSave() {
+      const title = ($("quickTitle").value || "").trim();
+      const mood = $("quickMood").value;
+      const tags = ($("quickTags").value || "").split(",").map(t => t.trim()).filter(Boolean).map(t => t.toLowerCase());
+      const body = ($("quickBody").value || "").trim();
+      if (!body && !title) return toast("warn", "Empty entry", "Write something first.");
+      
+      const inline = extractInlineTags(body);
+      const mergedTags = Array.from(new Set([...tags, ...inline]));
+      const date = new Date().toISOString().slice(0, 10);
+      
+      try {
+        const response = await fetch(`${API_URL}/api/journal/create`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ title, mood, date, tags: mergedTags, body, image: null })
+        });
+        const data = await response.json();
+        if (data.success) {
+          $("quickTitle").value = "";
+          $("quickTags").value = "";
+          $("quickBody").value = "";
+          toast("", "Saved", "Quick memory added.");
+          await renderDiary();
+          await updateStats();
+        } else {
+          toast("danger", "Error", data.error || "Failed to save");
+        }
+      } catch (err) {
+        toast("danger", "Error", "Could not save entry");
+      }
+    }
+
+    async function shareEntry(entryId) {
+      const friendEmail = prompt("Enter friend's email to share this entry:");
+      if (!friendEmail) return;
+      
+      try {
+        const response = await fetch(`${API_URL}/api/share/entry`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ toUserEmail: friendEmail, entryId })
+        });
+        const data = await response.json();
+        if (data.success) {
+          toast("success", "Shared!", "Entry sent to " + friendEmail);
+        } else {
+          toast("danger", "Error", data.error || "Failed to share");
+        }
+      } catch (err) {
+        toast("danger", "Error", "Could not share entry");
+      }
+    }
+
+    // Stats
+    async function updateStats() {
+      try {
+        const response = await fetch(`${API_URL}/api/journal/list`, {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        const data = await response.json();
+        const posts = data.entries || [];
+        
+        $("kpiTotal").innerText = String(posts.length);
+        
+        const dates = new Set(posts.map(p => p.date));
+        let streak = 0;
+        for (let d = new Date(); ;) {
+          const iso = d.toISOString().slice(0, 10);
+          if (dates.has(iso)) streak++;
+          else break;
+          d.setDate(d.getDate() - 1);
+        }
+        $("kpiStreak").innerText = String(streak);
+        
+        const now = new Date();
+        const ym = now.toISOString().slice(0, 7);
+        const thisMonth = posts.filter(p => (p.date || "").slice(0, 7) === ym).length;
+        $("kpiThisMonth").innerText = String(thisMonth);
+        
+        drawChart(posts);
+      } catch (err) {
+        console.error("Stats error:", err);
+      }
+    }
+
+    function drawChart(posts) {
+      const c = $("chart");
+      if (!c) return;
+      const ctx = c.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = c.clientWidth || 600;
+      const cssH = c.clientHeight || 160;
+      c.width = Math.floor(cssW * dpr);
+      c.height = Math.floor(cssH * dpr);
+      ctx.scale(dpr, dpr);
+      
+      const now = new Date();
+      const labels = [];
+      const counts = [];
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = d.toISOString().slice(0, 7);
+        labels.push(key);
+        counts.push(posts.filter(p => (p.date || "").slice(0, 7) === key).length);
+      }
+      
+      const W = cssW, H = cssH;
+      ctx.clearRect(0, 0, W, H);
+      const pad = 18;
+      const max = Math.max(1, ...counts);
+      const barW = (W - pad * 2) / counts.length;
+      
+      ctx.globalAlpha = 0.25;
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--border");
+      for (let i = 0; i <= 4; i++) {
+        const y = pad + (H - pad * 2) * (i / 4);
+        ctx.beginPath();
+        ctx.moveTo(pad, y);
+        ctx.lineTo(W - pad, y);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      
+      for (let i = 0; i < counts.length; i++) {
+        const v = counts[i];
+        const bh = (H - pad * 2) * (v / max);
+        const x = pad + i * barW + 6;
+        const y = H - pad - bh;
+        const bw = Math.max(6, barW - 12);
+        const primary = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() || "#10b981";
+        ctx.fillStyle = hexToRgba(primary, 0.6);
+        ctx.fillRect(x, y, bw, bh);
+        ctx.fillStyle = hexToRgba(primary, 0.95);
+        ctx.fillRect(x, y + bh - 3, bw, 3);
+      }
+      
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--muted");
+      ctx.font = "12px system-ui";
+      const showIdx = new Set([0, 5, 11]);
+      labels.forEach((lab, i) => {
+        if (!showIdx.has(i)) return;
+        const x = pad + i * barW + 6;
+        ctx.fillText(lab, x, H - 4);
+      });
+    }
+
+    function hexToRgba(hex, a) {
+      const h = hex.replace("#", "").trim();
+      const full = h.length === 3 ? h.split("").map(c => c + c).join("") : h.padEnd(6, "0").slice(0, 6);
+      const r = parseInt(full.slice(0, 2), 16);
+      const g = parseInt(full.slice(2, 4), 16);
+      const b = parseInt(full.slice(4, 6), 16);
+      return `rgba(${r},${g},${b},${a})`;
+    }
+
     // Friend System
     async function addFriendAction() {
       const emailInput = $("friendEmail");
       const targetEmail = emailInput.value.trim().toLowerCase();
-      
       if (!targetEmail) return toast("danger", "Error", "Please enter an email.");
       if (targetEmail === currentUser.email.toLowerCase()) return toast("danger", "Error", "You cannot add yourself.");
       
@@ -1354,10 +1718,9 @@ html {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${authToken}`
           },
-          body: JSON.stringify({ fromUserId: currentUser.id, toUserEmail: targetEmail })
+          body: JSON.stringify({ toUserEmail: targetEmail })
         });
         const data = await response.json();
-        
         if (data.success) {
           toast("success", "Success", "Request sent to " + targetEmail);
           emailInput.value = "";
@@ -1376,14 +1739,11 @@ html {
         });
         const data = await response.json();
         const container = $("pendingRequests");
-        
         if (!container) return;
-        
         if (data.requests.length === 0) {
           container.innerHTML = '<p class="muted" style="text-align:center; padding:10px;">No new requests.</p>';
           return;
         }
-        
         container.innerHTML = data.requests.map(req => `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;">
             <span><strong>${escapeHtml(req.fromName || req.fromEmail)}</strong><br><small>${escapeHtml(req.fromEmail)}</small></span>
@@ -1406,7 +1766,6 @@ html {
           body: JSON.stringify({ requestId })
         });
         const data = await response.json();
-        
         if (data.success) {
           toast("success", "Accepted", "You are now friends!");
           checkIncomingRequests();
@@ -1421,7 +1780,6 @@ html {
 
     async function unfriendFriend(friendId, friendEmail) {
       if (!confirm(`Are you sure you want to unfriend ${friendEmail}?`)) return;
-      
       try {
         const response = await fetch(`${API_URL}/api/friends/unfriend`, {
           method: "POST",
@@ -1429,10 +1787,9 @@ html {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${authToken}`
           },
-          body: JSON.stringify({ userId: currentUser.id, friendId })
+          body: JSON.stringify({ friendId })
         });
         const data = await response.json();
-        
         if (data.success) {
           toast("", "Unfriended", `You are no longer friends with ${friendEmail}`);
           renderFriendsList();
@@ -1451,32 +1808,26 @@ html {
         });
         const data = await response.json();
         const listContainer = $("confirmedFriendsList");
-        
         if (!listContainer) return;
-        
         if (data.friends.length === 0) {
           listContainer.innerHTML = '<div class="card empty">No friends added yet. Send some requests!</div>';
           const onlineCountSpan = $("onlineCount");
           if (onlineCountSpan) onlineCountSpan.innerText = '';
           return;
         }
-        
         let onlineCount = 0;
         const friendsHtml = data.friends.map(friend => {
           if (friend.onlineStatus === 'online') onlineCount++;
-          
           return `
             <div class="friend-item">
               <div class="friend-info">
-                <img src="${friend.photo || `https://ui-avatars.com/api/?background=10b981&color=fff&name=${friend.name?.charAt(0) || 'U'}`}" 
-                     class="friend-avatar" alt="avatar">
+                <img src="${friend.photo || `https://ui-avatars.com/api/?background=10b981&color=fff&name=${friend.name?.charAt(0) || 'U'}`}" class="friend-avatar" alt="avatar">
                 <div class="friend-details">
                   <div class="friend-name">${escapeHtml(friend.name)}</div>
                   <div class="friend-email">${escapeHtml(friend.email)}</div>
                   <div class="friend-status">
                     <span class="status-dot ${friend.onlineStatus === 'online' ? 'online' : 'offline'}"></span>
                     <span>${friend.onlineStatus === 'online' ? 'Online' : 'Offline'}</span>
-                    ${friend.onlineStatus === 'offline' && friend.lastSeen ? `<span class="last-seen">Last seen ${new Date(friend.lastSeen).toLocaleString()}</span>` : ''}
                   </div>
                 </div>
               </div>
@@ -1488,12 +1839,9 @@ html {
             </div>
           `;
         }).join('');
-        
         listContainer.innerHTML = friendsHtml;
         const onlineCountSpan = $("onlineCount");
-        if (onlineCountSpan) {
-          onlineCountSpan.innerText = `(${onlineCount} online)`;
-        }
+        if (onlineCountSpan) onlineCountSpan.innerText = `(${onlineCount} online)`;
       } catch (err) {
         console.error("Failed to load friends:", err);
       }
@@ -1506,14 +1854,11 @@ html {
         });
         const data = await response.json();
         const container = $("sharedInboxContainer");
-        
         if (!container) return;
-        
         if (data.shared.length === 0) {
           container.innerHTML = '<p class="muted" style="text-align:center; padding:20px;">No entries shared with you yet.</p>';
           return;
         }
-        
         container.innerHTML = data.shared.map(share => `
           <div class="card" style="background: rgba(255,255,255,0.05); margin-bottom: 10px; border-left: 3px solid var(--primary);">
             <div style="display:flex; justify-content:space-between;">
@@ -1530,29 +1875,66 @@ html {
       }
     }
 
-    // Placeholder functions for other features
-    async function quickSave() { toast("info", "Coming Soon", "Journal features coming soon!"); }
-    function openEditor() { toast("info", "Coming Soon", "Editor coming soon!"); }
-    function closeEditor() { $("editorBackdrop").style.display = "none"; }
-    async function saveFromEditor() { closeEditor(); }
-    function loadEntryImage(e) { }
-    function updatePreview() { }
-    function basicMarkdownToHtml(text) { return text; }
-    async function renderDiary() { $("diaryContainer").innerHTML = '<div class="card">Diary feature coming soon!</div>'; }
-    async function updateStats() { $("kpiTotal").innerText = "0"; $("kpiStreak").innerText = "0"; $("kpiThisMonth").innerText = "0"; }
-    function drawChart(posts) { }
-    function uploadPhoto(e) { toast("info", "Coming Soon", "Photo upload coming soon!"); }
-    function resetPhoto() { }
-    async function exportData() { toast("info", "Coming Soon", "Export coming soon!"); }
-    function importData(event) { }
-    async function wipeMyData() { if (confirm("Delete account?")) logout(true); }
+    // Profile functions
+    function uploadPhoto(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (file.size > 2000000) {
+        e.target.value = "";
+        return toast("warn", "Too large", "Please choose an image under 2MB.");
+      }
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const response = await fetch(`${API_URL}/api/user/photo`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ photo: reader.result })
+          });
+          const data = await response.json();
+          if (data.success) {
+            currentUser.photo = reader.result;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            hydrateUserUI();
+            toast("", "Updated", "Profile photo updated.");
+          }
+        } catch (err) {
+          toast("danger", "Error", "Could not update photo");
+        }
+        e.target.value = "";
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function resetPhoto() { toast("info", "Coming Soon", "Photo reset coming soon!"); }
+    function exportData() { toast("info", "Coming Soon", "Export coming soon!"); }
+    function importData(event) { toast("info", "Coming Soon", "Import coming soon!"); }
     
+    async function wipeMyData() {
+      if (!confirm("WARNING: This will delete ALL your data! This action cannot be undone. Continue?")) return;
+      try {
+        const response = await fetch(`${API_URL}/api/user/delete`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        const data = await response.json();
+        if (data.success) {
+          toast("", "Deleted", "Your account has been deleted.");
+          logout(true);
+        }
+      } catch (err) {
+        toast("danger", "Error", "Could not delete account");
+      }
+    }
+
     function logout(showToast) {
       if (showToast) toast("", "Logged out", "See you next time!");
       stopHeartbeat();
       localStorage.removeItem('authToken');
       localStorage.removeItem('currentUser');
-      sessionPassword = "";
       currentUser = null;
       authToken = null;
       location.reload();
@@ -1568,21 +1950,34 @@ html {
       toast("warn", "Contact Support", "Password recovery requires admin assistance.");
     }
 
+    // Keyboard shortcuts
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey && e.key.toLowerCase() === "k") {
+        if ($("app").style.display !== "none") {
+          e.preventDefault();
+          openEditor();
+        }
+      }
+      if ($("editorBackdrop").style.display === "flex") {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          closeEditor();
+        }
+        if (e.ctrlKey && e.key === "Enter") {
+          e.preventDefault();
+          saveFromEditor();
+        }
+      }
+    });
+
     // Initialize
     window.addEventListener("load", async () => {
       generateCaptcha();
       toggleMode("login");
-      
-      // Check for existing session
       if (authToken && localStorage.getItem('currentUser')) {
         currentUser = JSON.parse(localStorage.getItem('currentUser'));
         if (currentUser) {
-          $("authSection").style.display = "none";
-          $("app").style.display = "block";
-          await hydrateUserUI();
-          showView("home");
-          startHeartbeat();
-          toast("", "Welcome back", "Session restored.");
+          await initApp();
         }
       }
     });
