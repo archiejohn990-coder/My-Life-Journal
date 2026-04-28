@@ -130,36 +130,12 @@
       padding: 8px 16px; border-radius: 12px;
     }
     .link{ color: var(--primary); font-weight: 900; cursor:pointer; text-decoration: underline; }
-    
-    /* Center the forgot password and recovery links */
-    .hint {
-      text-align: center;
-    }
-    .hint .link {
-      display: inline-block;
-      cursor: pointer;
-    }
-    #backToLoginBtn {
-      display: block;
-      text-align: center;
-      cursor: pointer;
-    }
-    #resetAccountBtn {
-      width: 100%;
-    }
-    .divider {
-      text-align: center;
-      margin: 15px 0;
-      position: relative;
-    }
-    .divider::before, .divider::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      width: 45%;
-      height: 1px;
-      background: var(--border);
-    }
+    .hint { text-align: center; }
+    .hint .link { display: inline-block; cursor: pointer; }
+    #backToLoginBtn { display: block; text-align: center; cursor: pointer; }
+    #resetAccountBtn { width: 100%; }
+    .divider { text-align: center; margin: 15px 0; position: relative; }
+    .divider::before, .divider::after { content: ""; position: absolute; top: 50%; width: 45%; height: 1px; background: var(--border); }
     .divider::before { left: 0; }
     .divider::after { right: 0; }
     
@@ -340,7 +316,8 @@
     .settings-tab i { font-size: 1.1rem; }
     .settings-tab:hover { background: color-mix(in oklab, var(--primary) 10%, transparent); color: var(--primary); }
     .settings-tab.active { background: var(--primary); color: white; }
-    .settings-panel { animation: fadeIn 0.3s ease; }
+    .settings-panel { display: none; }
+    .settings-panel.active { display: block; animation: fadeIn 0.3s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     
     .profile-avatar { text-align: center; margin-bottom: 24px; }
@@ -431,7 +408,6 @@
         </form>
       </div>
       
-      <!-- Forgot Password Link - Centered -->
       <div class="hint" style="margin-top: 12px;">
         <span class="link" id="forgotPasswordBtn">
           <i class="fas fa-key"></i> Forgot password or PIN?
@@ -450,44 +426,20 @@
       <div class="modal-body">
         <div class="recovery-warning">
           <i class="fas fa-exclamation-triangle"></i>
-          <div>
-            <strong>Important Note:</strong><br>
-            Because entries are encrypted using your password, resetting your password will make all old entries inaccessible.
-            You will keep your account, but previous encrypted entries cannot be recovered.
-          </div>
+          <div><strong>Important Note:</strong><br>Resetting your password will make all old entries inaccessible.</div>
         </div>
-        <div class="field">
-          <div class="label">Email Address</div>
-          <input type="email" id="recoverEmail" class="input" placeholder="you@example.com">
-        </div>
-        <div class="field">
-          <div class="label">Full Name (exact match)</div>
-          <input type="text" id="recoverName" class="input" placeholder="Enter your full name as shown on account">
-        </div>
+        <div class="field"><div class="label">Email Address</div><input type="email" id="recoverEmail" class="input" placeholder="you@example.com"></div>
+        <div class="field"><div class="label">Full Name (exact match)</div><input type="text" id="recoverName" class="input" placeholder="Enter your full name"></div>
         <div class="divider">OR</div>
-        <div class="field">
-          <div class="label">New Password (optional)</div>
-          <input type="password" id="newPassword" class="input" placeholder="Leave blank to keep current">
-        </div>
-        <div class="field">
-          <div class="label">New PIN (6 digits)</div>
-          <input type="password" id="newPinRecovery" class="input" placeholder="6-digit PIN" maxlength="6">
-        </div>
+        <div class="field"><div class="label">New Password (optional)</div><input type="password" id="newPassword" class="input" placeholder="Leave blank to keep current"></div>
+        <div class="field"><div class="label">New PIN (6 digits)</div><input type="password" id="newPinRecovery" class="input" placeholder="6-digit PIN" maxlength="6"></div>
         <div class="captcha" style="margin-top: 15px;">
-          <div>
-            <div class="label">Captcha</div>
-            <div class="captcha-code" id="recoveryCaptchaBox">----</div>
-          </div>
+          <div><div class="label">Captcha</div><div class="captcha-code" id="recoveryCaptchaBox">----</div></div>
           <button type="button" id="refreshRecoveryCaptchaBtn"><i class="fas fa-rotate"></i> Refresh</button>
         </div>
-        <div class="field">
-          <div class="label">Enter Captcha</div>
-          <input type="text" id="recoveryCaptchaInp" class="input" placeholder="Type the code">
-        </div>
+        <div class="field"><div class="label">Enter Captcha</div><input type="text" id="recoveryCaptchaInp" class="input" placeholder="Type the code"></div>
         <button class="btn" id="resetAccountBtn">Reset Account</button>
-        <div class="hint" style="margin-top: 12px;">
-          <span class="link" id="backToLoginBtn">← Back to Login</span>
-        </div>
+        <div class="hint" style="margin-top: 12px;"><span class="link" id="backToLoginBtn">← Back to Login</span></div>
       </div>
     </div>
   </div>
@@ -497,9 +449,7 @@
     <div class="drawer-backdrop" id="drawerBackdrop"></div>
     <div class="layout">
       <nav class="sidebar" id="sidebar">
-        <div class="sidebar-logo" id="sidebarLogo">
-          <i class="fas fa-feather"></i> <span>My Life Journal</span>
-        </div>
+        <div class="sidebar-logo" id="sidebarLogo"><i class="fas fa-feather"></i> <span>My Life Journal</span></div>
         <div class="nav">
           <a id="nav-home" class="active"><i class="fas fa-home"></i> Home</a>
           <a id="nav-diary"><i class="fas fa-book"></i> Diary</a>
@@ -523,7 +473,7 @@
         </div>
 
         <!-- HOME VIEW -->
-        <section id="view-home"><h1>Welcome back 👋</h1><div class="grid" style="margin-top:14px;"><div class="card"><h3 id="entryCount">0 entries</h3><p class="muted">Your encrypted journal</p><div class="chips" style="margin-top:12px;"><span class="chip"><i class="fas fa-key"></i> AES-GCM</span><span class="chip"><i class="fas fa-bolt"></i> Ctrl+K to add</span></div></div><div class="card"><h3>Backup</h3><div class="button-row-center"><button class="btn-inline" id="exportBtn"><i class="fas fa-download"></i> Export</button><button class="btn-ghost" id="importBtn"><i class="fas fa-upload"></i> Import</button><input id="importFile" type="file" accept=".json" class="hidden"></div></div></div><div class="card"><h3>Quick Add</h3><div class="field"><input id="quickTitle" class="input" placeholder="Title"></div><div class="row"><div class="field"><select id="quickMood" class="input"><option>🙂 Happy</option><option>😌 Calm</option><option>😤 Stressed</option><option>😢 Sad</option><option>🤩 Excited</option><option>😐 Neutral</option></select></div><div class="field"><input id="quickTags" class="input" placeholder="Tags (comma)"></div></div><div class="field"><textarea id="quickBody" class="input" placeholder="What's on your mind?" rows="3"></textarea></div><div class="button-row-center"><button class="btn-inline" id="quickSaveBtn">Save Entry</button></div></div></section>
+        <section id="view-home"><h1>Welcome back 👋</h1><div class="grid" style="margin-top:14px;"><div class="card"><h3 id="entryCount">0 entries</h3><p class="muted">Your encrypted journal</p><div class="chips"><span class="chip"><i class="fas fa-key"></i> AES-GCM</span><span class="chip"><i class="fas fa-bolt"></i> Ctrl+K to add</span></div></div><div class="card"><h3>Backup</h3><div class="button-row-center"><button class="btn-inline" id="exportBtn"><i class="fas fa-download"></i> Export</button><button class="btn-ghost" id="importBtn"><i class="fas fa-upload"></i> Import</button><input id="importFile" type="file" accept=".json" class="hidden"></div></div></div><div class="card"><h3>Quick Add</h3><div class="field"><input id="quickTitle" class="input" placeholder="Title"></div><div class="row"><div class="field"><select id="quickMood" class="input"><option>🙂 Happy</option><option>😌 Calm</option><option>😤 Stressed</option><option>😢 Sad</option><option>🤩 Excited</option><option>😐 Neutral</option></select></div><div class="field"><input id="quickTags" class="input" placeholder="Tags (comma)"></div></div><div class="field"><textarea id="quickBody" class="input" placeholder="What's on your mind?" rows="3"></textarea></div><div class="button-row-center"><button class="btn-inline" id="quickSaveBtn">Save Entry</button></div></div></section>
 
         <!-- DIARY VIEW -->
         <section id="view-diary" class="hidden"><h1>My Diary</h1><div class="card"><div class="row"><div class="field"><input type="text" id="diarySearch" class="input" placeholder="Search..."></div><div class="field"><input type="date" id="dateFilter" class="input"></div></div><div class="row"><div class="field"><select id="sortMode" class="input"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></div><div class="field"><select id="moodFilter" class="input"><option value="">All moods</option><option>🙂 Happy</option><option>😌 Calm</option><option>😤 Stressed</option><option>😢 Sad</option><option>🤩 Excited</option><option>😐 Neutral</option></select></div></div><div class="button-row-center"><button class="btn-inline" id="newEntryBtn"><i class="fas fa-plus"></i> New Entry</button></div></div><div id="diaryContainer"></div></section>
@@ -534,7 +484,7 @@
         <!-- FRIENDS VIEW -->
         <section id="view-friends" class="hidden"><h1>Friends</h1><div class="card"><h3>Add Friend</h3><input id="friendEmail" class="input" placeholder="friend@example.com"><div class="button-row-center"><button class="btn-inline" id="sendRequestBtn">Send Request</button></div></div><div class="card"><h3>Pending Requests</h3><div id="pendingRequests"></div></div><div class="card"><h3>Shared With Me</h3><div id="sharedInboxContainer"></div></div><div class="card"><h3>My Friends</h3><div id="confirmedFriendsList"></div></div></section>
 
-        <!-- SETTINGS - IMPROVED WITH TABS -->
+        <!-- SETTINGS VIEW -->
         <section id="view-settings" class="hidden">
           <h1>Settings</h1>
           <div class="settings-tabs">
@@ -544,9 +494,8 @@
             <button class="settings-tab" data-tab="team"><i class="fas fa-users"></i> Team</button>
           </div>
 
-          <!-- Profile Tab -->
           <div class="settings-panel active" id="settings-profile">
-            <div class="card" style="text-align:center;">
+            <div class="card">
               <div class="profile-avatar">
                 <img id="userAvatar" alt="profile photo">
                 <div><button class="btn-ghost" id="changePhotoBtn"><i class="fas fa-camera"></i> Change Photo</button></div>
@@ -555,11 +504,11 @@
               <div class="profile-info">
                 <div class="info-row"><div class="info-label"><i class="fas fa-user"></i> Full Name</div><div class="info-value" id="profName">Loading...</div></div>
                 <div class="info-row"><div class="info-label"><i class="fas fa-envelope"></i> Email Address</div><div class="info-value" id="profEmail">Loading...</div></div>
+                <div class="info-row"><div class="info-label"><i class="fas fa-calendar"></i> Member Since</div><div class="info-value" id="memberSince">Loading...</div></div>
               </div>
             </div>
           </div>
 
-          <!-- Security Tab -->
           <div class="settings-panel hidden" id="settings-security">
             <div class="card"><h3><i class="fas fa-lock"></i> Security Settings</h3>
               <div class="info-row"><div class="info-label"><i class="fas fa-key"></i> Secret PIN</div><div class="info-value pin-display"><span id="pinText">••••••</span><button class="iconbtn-small" id="togglePinBtn"><i class="fas fa-eye" id="pinToggleIcon"></i></button></div></div>
@@ -568,24 +517,22 @@
             </div>
           </div>
 
-          <!-- Data Tab -->
           <div class="settings-panel hidden" id="settings-data">
             <div class="card"><h3><i class="fas fa-database"></i> Data Management</h3>
               <div class="data-stats"><div class="stat-item"><div class="stat-number" id="dataEntryCount">0</div><div class="stat-label">Journal Entries</div></div><div class="stat-item"><div class="stat-number" id="dataFriendCount">0</div><div class="stat-label">Friends</div></div><div class="stat-item"><div class="stat-number" id="dataStorageSize">0 KB</div><div class="stat-label">Storage Used</div></div></div>
               <div class="button-group"><button class="btn-inline" id="exportDataBtn"><i class="fas fa-download"></i> Export All Data</button><button class="btn-ghost" id="importDataBtn"><i class="fas fa-upload"></i> Import Backup</button></div>
-              <div class="danger-zone"><h4><i class="fas fa-exclamation-triangle"></i> Danger Zone</h4><p>Once you delete your account, there is no going back. This action cannot be undone.</p><button class="btn-danger" id="deleteAccountBtn"><i class="fas fa-trash-alt"></i> Delete Account & All Data</button></div>
+              <div class="danger-zone"><h4><i class="fas fa-exclamation-triangle"></i> Danger Zone</h4><p>Once you delete your account, there is no going back.</p><button class="btn-danger" id="deleteAccountBtn"><i class="fas fa-trash-alt"></i> Delete Account & All Data</button></div>
             </div>
           </div>
 
-          <!-- Team Tab -->
           <div class="settings-panel hidden" id="settings-team">
             <div class="card"><h3><i class="fas fa-heart"></i> Meet the Team</h3><p class="team-description">The amazing people behind My Life Journal</p>
               <div class="team-grid">
-                <div class="team-member"><img src="/Team/Carlo.jpg" onerror="this.src='https://ui-avatars.com/api/?background=10b981&color=fff&name=Carlo&size=100'"><h4>Carlo Nuyda</h4><a href="https://www.facebook.com/carlonuyda7" target="_blank" class="social-link"><i class="fab fa-facebook"></i> Facebook</a></div>
-                <div class="team-member"><img src="/Team/Yurie.jpg" onerror="this.src='https://ui-avatars.com/api/?background=0ea5e9&color=fff&name=Yurie&size=100'"><h4>Yurie Villacorte</h4><a href="https://www.facebook.com/yurievillacorte" target="_blank" class="social-link"><i class="fab fa-facebook"></i> Facebook</a></div>
-                <div class="team-member"><img src="/Team/Archie.jpg" onerror="this.src='https://ui-avatars.com/api/?background=10b981&color=fff&name=Archie&size=100'"><h4>Archie Jhon Gregorio</h4><a href="https://www.facebook.com/archie.jhon.gregorio" target="_blank" class="social-link"><i class="fab fa-facebook"></i> Facebook</a></div>
-                <div class="team-member"><img src="/Team/Daisy.jpg" onerror="this.src='https://ui-avatars.com/api/?background=f59e0b&color=fff&name=Daisy&size=100'"><h4>Daisy Serapia</h4><a href="https://www.facebook.com/kyle.serapia.507" target="_blank" class="social-link"><i class="fab fa-facebook"></i> Facebook</a></div>
-                <div class="team-member"><img src="/Team/Trishan.jpg" onerror="this.src='https://ui-avatars.com/api/?background=ef4444&color=fff&name=Trishan&size=100'"><h4>Trishan Laurito</h4><a href="https://www.facebook.com/trishan.laurito.2025" target="_blank" class="social-link"><i class="fab fa-facebook"></i> Facebook</a></div>
+                <div class="team-member"><img src="https://ui-avatars.com/api/?background=10b981&color=fff&name=Carlo&size=100"><h4>Carlo Nuyda</h4><a href="https://www.facebook.com/carlonuyda7" target="_blank" class="social-link"><i class="fab fa-facebook"></i> Facebook</a></div>
+                <div class="team-member"><img src="https://ui-avatars.com/api/?background=0ea5e9&color=fff&name=Yurie&size=100"><h4>Yurie Villacorte</h4><a href="https://www.facebook.com/yurievillacorte" target="_blank" class="social-link"><i class="fab fa-facebook"></i> Facebook</a></div>
+                <div class="team-member"><img src="https://ui-avatars.com/api/?background=10b981&color=fff&name=Archie&size=100"><h4>Archie Jhon Gregorio</h4><a href="https://www.facebook.com/archie.jhon.gregorio" target="_blank" class="social-link"><i class="fab fa-facebook"></i> Facebook</a></div>
+                <div class="team-member"><img src="https://ui-avatars.com/api/?background=f59e0b&color=fff&name=Daisy&size=100"><h4>Daisy Serapia</h4><a href="https://www.facebook.com/kyle.serapia.507" target="_blank" class="social-link"><i class="fab fa-facebook"></i> Facebook</a></div>
+                <div class="team-member"><img src="https://ui-avatars.com/api/?background=ef4444&color=fff&name=Trishan&size=100"><h4>Trishan Laurito</h4><a href="https://www.facebook.com/trishan.laurito.2025" target="_blank" class="social-link"><i class="fab fa-facebook"></i> Facebook</a></div>
               </div>
             </div>
           </div>
@@ -595,10 +542,10 @@
   </section>
 
   <!-- EDITOR MODAL -->
-  <div class="modal-backdrop" id="editorBackdrop"><div class="modal"><div class="modal-head"><h3 id="editorTitle">Entry</h3><button class="iconbtn" id="closeEditorBtn">✕</button></div><div class="modal-body"><input id="eTitle" class="input" placeholder="Title"><div class="row" style="margin-top:10px;"><select id="eMood" class="input"><option>🙂 Happy</option><option>😌 Calm</option><option>😤 Stressed</option><option>😢 Sad</option><option>🤩 Excited</option><option>😐 Neutral</option></select><input id="eTags" class="input" placeholder="Tags (comma)"></div><div class="field"><input type="date" id="eDate" class="input"></div><div class="field"><textarea id="eBody" class="input" rows="6" placeholder="Write your entry..."></textarea></div><div class="field"><input type="file" id="eImage" accept="image/*"><img id="imagePreview" class="thumb hidden"></div><div class="preview" id="preview">Preview will appear here...</div></div><div class="modal-foot"><button class="btn-ghost" id="cancelEditorBtn">Cancel</button><button class="btn-inline" id="saveEditorBtn">Save</button></div></div></div>
+  <div class="modal-backdrop" id="editorBackdrop"><div class="modal"><div class="modal-head"><h3 id="editorTitle">Entry</h3><button class="iconbtn" id="closeEditorBtn">✕</button></div><div class="modal-body"><input id="eTitle" class="input" placeholder="Title"><div class="row"><select id="eMood" class="input"><option>🙂 Happy</option><option>😌 Calm</option><option>😤 Stressed</option><option>😢 Sad</option><option>🤩 Excited</option><option>😐 Neutral</option></select><input id="eTags" class="input" placeholder="Tags (comma)"></div><div class="field"><input type="date" id="eDate" class="input"></div><div class="field"><textarea id="eBody" class="input" rows="6" placeholder="Write your entry..."></textarea></div><div class="field"><input type="file" id="eImage" accept="image/*"><img id="imagePreview" class="thumb hidden"></div><div class="preview" id="preview">Preview will appear here...</div></div><div class="modal-foot"><button class="btn-ghost" id="cancelEditorBtn">Cancel</button><button class="btn-inline" id="saveEditorBtn">Save</button></div></div></div>
 
   <!-- ABOUT MODAL -->
-  <div class="modal-backdrop" id="aboutBackdrop"><div class="modal" style="max-width:640px;"><div class="modal-head"><h3>About • My Life Journal</h3><button class="iconbtn" id="closeAboutBtn">✕</button></div><div class="modal-body"><div class="card notice" style="margin:0;"><div style="font-weight:950; margin-bottom:6px;">What this is</div><div class="muted" style="line-height:1.5;">A Journal that you can use through Internet, you don't need papers and pen or even a book to write or put your thoughts about your life story. Share with Friends or Family your thoughts, if you want. Be Open and Creative whenever you want to My Life Journal.</div></div><br><div class="card notice" style="margin:0;"><h3>Our Team</h3><div class="team-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));"><div class="member"><a href="https://www.facebook.com/carlonuyda7" target="_blank"><img src="/Team/Carlo.jpg" onerror="this.src='https://ui-avatars.com/api/?background=10b981&color=fff&name=Carlo&size=100'"></a><p>Carlo Nuyda</p></div><div class="member"><a href="https://www.facebook.com/yurievillacorte" target="_blank"><img src="/Team/Yurie.jpg" onerror="this.src='https://ui-avatars.com/api/?background=0ea5e9&color=fff&name=Yurie&size=100'"></a><p>Yurie Villacorte</p></div><div class="member"><a href="https://www.facebook.com/archie.jhon.gregorio" target="_blank"><img src="/Team/Archie.jpg" onerror="this.src='https://ui-avatars.com/api/?background=10b981&color=fff&name=Archie&size=100'"></a><p>Archie Jhon Gregorio</p></div><div class="member"><a href="https://www.facebook.com/kyle.serapia.507" target="_blank"><img src="/Team/Daisy.jpg" onerror="this.src='https://ui-avatars.com/api/?background=f59e0b&color=fff&name=Daisy&size=100'"></a><p>Daisy Serapia</p></div><div class="member"><a href="https://www.facebook.com/trishan.laurito.2025" target="_blank"><img src="/Team/Trishan.jpg" onerror="this.src='https://ui-avatars.com/api/?background=ef4444&color=fff&name=Trishan&size=100'"></a><p>Trishan Laurito</p></div></div></div></div></div></div>
+  <div class="modal-backdrop" id="aboutBackdrop"><div class="modal" style="max-width:640px;"><div class="modal-head"><h3>About • My Life Journal</h3><button class="iconbtn" id="closeAboutBtn">✕</button></div><div class="modal-body"><div class="card notice"><div style="font-weight:950; margin-bottom:6px;">What this is</div><div class="muted">A Journal that you can use through Internet, you don't need papers and pen or even a book to write or put your thoughts about your life story. Share with Friends or Family your thoughts, if you want. Be Open and Creative whenever you want to My Life Journal.</div></div><br><div class="card notice"><h3>Our Team</h3><div class="team-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));"><div class="member"><a href="https://www.facebook.com/carlonuyda7" target="_blank"><img src="https://ui-avatars.com/api/?background=10b981&color=fff&name=Carlo&size=100"></a><p>Carlo Nuyda</p></div><div class="member"><a href="https://www.facebook.com/yurievillacorte" target="_blank"><img src="https://ui-avatars.com/api/?background=0ea5e9&color=fff&name=Yurie&size=100"></a><p>Yurie Villacorte</p></div><div class="member"><a href="https://www.facebook.com/archie.jhon.gregorio" target="_blank"><img src="https://ui-avatars.com/api/?background=10b981&color=fff&name=Archie&size=100"></a><p>Archie Jhon Gregorio</p></div><div class="member"><a href="https://www.facebook.com/kyle.serapia.507" target="_blank"><img src="https://ui-avatars.com/api/?background=f59e0b&color=fff&name=Daisy&size=100"></a><p>Daisy Serapia</p></div><div class="member"><a href="https://www.facebook.com/trishan.laurito.2025" target="_blank"><img src="https://ui-avatars.com/api/?background=ef4444&color=fff&name=Trishan&size=100"></a><p>Trishan Laurito</p></div></div></div></div></div></div>
 
   <script>
 // ==================== DOM Elements ====================
@@ -739,8 +686,7 @@ async function syncToBackend(){
 async function signupUser(email, name, passwordHash, pinHash, kdfSalt, pinSalt){
   try {
     const response = await fetch(`${API_URL}/api/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, name, passwordHash, pinHash, kdfSalt, pinSalt, encryptedVault: { iv: "", data: "" } })
     });
     const data = await response.json();
@@ -753,16 +699,13 @@ async function signupUser(email, name, passwordHash, pinHash, kdfSalt, pinSalt){
     await loadUserData();
     showView("home");
     toast("", "Success", "Account created!");
-  } catch (e) {
-    toast("danger", "Signup Failed", e.message);
-  }
+  } catch (e) { toast("danger", "Signup Failed", e.message); }
 }
 
 async function loginUser(email, passwordHash, pinHash){
   try {
     const response = await fetch(`${API_URL}/api/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, passwordHash, pinHash })
     });
     const data = await response.json();
@@ -774,32 +717,53 @@ async function loginUser(email, passwordHash, pinHash){
     await loadUserData();
     showView("home");
     toast("", "Welcome", "Logged in successfully");
-  } catch (e) {
-    toast("danger", "Login Failed", e.message);
-  }
+  } catch (e) { toast("danger", "Login Failed", e.message); }
 }
 
 async function loadUserData(){
   const me = getUser();
   if(!me) return;
+  
   $("userGreet").innerText = me.name || me.email.split("@")[0];
   $("userEmailSmall").innerText = me.email;
   $("profName").innerText = me.name || "User";
   $("profEmail").innerText = me.email;
+  
   let avatarUrl = me.photo || `https://ui-avatars.com/api/?background=10b981&color=fff&name=${encodeURIComponent(me.name || "User")}`;
   $("userAvatar").src = avatarUrl;
   $("topAvatar").src = avatarUrl;
   
+  const memberSince = $("memberSince");
+  if(memberSince && me.createdAt) memberSince.innerText = new Date(me.createdAt).toLocaleDateString();
+  else if(memberSince) memberSince.innerText = "January 2025";
+  
   const vault = await openVault();
   const posts = vault.posts || [];
   const dataEntryCount = $("dataEntryCount");
-  if (dataEntryCount) dataEntryCount.innerText = posts.length;
+  if(dataEntryCount) dataEntryCount.innerText = posts.length;
+  
   const dataStorageSize = $("dataStorageSize");
-  if (dataStorageSize) {
+  if(dataStorageSize) {
     const size = JSON.stringify(me).length;
-    const kb = (size / 1024).toFixed(1);
-    dataStorageSize.innerText = `${kb} KB`;
+    dataStorageSize.innerText = `${(size / 1024).toFixed(1)} KB`;
   }
+  
+  await renderDiary();
+  await updateStats();
+}
+
+async function hydrateUserUI(){
+  const me = getUser();
+  if(!me) return;
+  $("userGreet").innerText = me.name;
+  $("userEmailSmall").innerText = me.email;
+  $("profName").innerText = me.name;
+  $("profEmail").innerText = me.email;
+  const fallback = `https://ui-avatars.com/api/?background=10b981&color=fff&name=${encodeURIComponent(me.name || "User")}`;
+  $("userAvatar").src = me.photo || fallback;
+  $("topAvatar").src = me.photo || fallback;
+  $("pinText").innerText = "••••••";
+  window.pinHidden = true;
 }
 
 // ==================== Navigation ====================
@@ -820,24 +784,11 @@ function closeAbout(){ $("aboutBackdrop").style.display = "none"; }
 function logout(){ sessionPassword = ""; localStorage.removeItem(LS_CURRENT); location.reload(); }
 
 // ==================== Recovery Functions ====================
-function openRecoveryModal() {
-  generateRecoveryCaptcha();
-  $("recoveryModal").style.display = "flex";
-  $("recoverEmail").value = "";
-  $("recoverName").value = "";
-  $("newPassword").value = "";
-  $("newPinRecovery").value = "";
-}
-
+function openRecoveryModal() { generateRecoveryCaptcha(); $("recoveryModal").style.display = "flex"; $("recoverEmail").value = ""; $("recoverName").value = ""; $("newPassword").value = ""; $("newPinRecovery").value = ""; }
 function closeRecoveryModal() { $("recoveryModal").style.display = "none"; }
-
 async function handleAccountReset() {
   const userCaptcha = $("recoveryCaptchaInp").value.trim().toUpperCase();
-  if (userCaptcha !== recoveryCaptchaCode) {
-    toast("danger", "Wrong Captcha", "Please enter the correct code");
-    generateRecoveryCaptcha();
-    return;
-  }
+  if (userCaptcha !== recoveryCaptchaCode) { toast("danger", "Wrong Captcha", "Please enter the correct code"); generateRecoveryCaptcha(); return; }
   const email = $("recoverEmail").value.trim().toLowerCase();
   const name = $("recoverName").value.trim();
   const newPassword = $("newPassword").value;
@@ -845,20 +796,13 @@ async function handleAccountReset() {
   if (!email || !name) { toast("warn", "Missing Info", "Please enter your email and full name."); return; }
   if (newPin && newPin.length !== 6) { toast("warn", "Invalid PIN", "PIN must be exactly 6 digits."); return; }
   try {
-    const response = await fetch(`${API_URL}/api/recover`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, name, newPassword, newPin })
-    });
+    const response = await fetch(`${API_URL}/api/recover`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, name, newPassword, newPin }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
     toast("success", "Reset Complete!", data.message);
     closeRecoveryModal();
     $("email").value = email;
-    $("pass").value = "";
-    $("pin").value = "";
-  } catch (error) {
-    toast("danger", "Reset Failed", error.message);
-  }
+  } catch (error) { toast("danger", "Reset Failed", error.message); }
 }
 
 // ==================== Settings Tabs ====================
@@ -866,12 +810,12 @@ function initSettingsTabs() {
   const tabs = document.querySelectorAll('.settings-tab');
   const panels = document.querySelectorAll('.settings-panel');
   tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      const tabId = tab.getAttribute('data-tab');
+    tab.addEventListener('click', function() {
+      const tabId = this.getAttribute('data-tab');
       tabs.forEach(t => t.classList.remove('active'));
       panels.forEach(p => p.classList.remove('active'));
-      tab.classList.add('active');
-      const activePanel = $(`settings-${tabId}`);
+      this.classList.add('active');
+      const activePanel = document.getElementById(`settings-${tabId}`);
       if (activePanel) activePanel.classList.add('active');
     });
   });
@@ -980,8 +924,6 @@ function drawChart(posts){
     ctx.fillStyle = hexToRgba(primary, 0.6); ctx.fillRect(x, y, bw, bh);
     ctx.fillStyle = hexToRgba(primary, 0.95); ctx.fillRect(x, y+bh-3, bw, 3);
   }
-  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--muted") || "#64748b";
-  ctx.font = "12px system-ui";
 }
 function hexToRgba(hex,a){ const h = hex.replace("#","").trim(); const full = h.length===3 ? h.split("").map(c=>c+c).join("") : h.padEnd(6,"0").slice(0,6); const r = parseInt(full.slice(0,2),16); const g = parseInt(full.slice(2,4),16); const b = parseInt(full.slice(4,6),16); return `rgba(${r},${g},${b},${a})`; }
 async function refreshAll(){ await renderDiary(); await updateStats(); }
@@ -1051,7 +993,7 @@ async function loadFriendsList(){
     if(!container) return;
     const friends = data.friends || [];
     const dataFriendCount = $("dataFriendCount");
-    if (dataFriendCount) dataFriendCount.innerText = friends.length;
+    if(dataFriendCount) dataFriendCount.innerText = friends.length;
     if(friends.length === 0){ container.innerHTML = '<p class="muted" style="text-align:center; padding:10px;">No friends added yet.</p>'; return; }
     container.innerHTML = friends.map(friend => `<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px; border-bottom:1px solid var(--border);"><div style="display:flex; align-items:center; gap:12px;"><div style="width:35px; height:35px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:bold;">${friend.name ? friend.name.charAt(0).toUpperCase() : friend.email.charAt(0).toUpperCase()}</div><div><div style="font-weight:500;">${escapeHtml(friend.name || friend.email)}</div><div style="font-size:0.8rem; color:var(--muted);">${escapeHtml(friend.email)}</div></div></div><button class="btn-ghost" style="background:#ef4444; color:white; padding:6px 12px;" onclick='unfriendFriend("${friend._id}", "${escapeHtml(friend.email)}")'><i class="fas fa-user-minus"></i> Unfriend</button></div>`).join('');
   } catch(e){ console.error(e); }
@@ -1133,50 +1075,26 @@ $("authForm").addEventListener("submit", async (e) => {
     const pinHash = await sha256(pin + "|" + pinSalt);
     await signupUser(email, name, passwordHash, pinHash, kdfSalt, pinSalt);
   } else {
-    // LOGIN - Fetch salts from backend (cross-device fix)
     try {
-      console.log("Attempting login for:", email);
-      
-      const findResponse = await fetch(`${API_URL}/api/user/find`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email })
-      });
-      
+      const findResponse = await fetch(`${API_URL}/api/user/find`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email }) });
       const userData = await findResponse.json();
-      console.log("Find user response:", findResponse.status, userData);
-      
-      if (!findResponse.ok || !userData.kdfSalt) {
-        toast("danger", "Account Not Found", "No account found with this email. Please sign up first.");
-        return;
-      }
-      
+      if (!findResponse.ok || !userData.kdfSalt) { toast("danger", "Account Not Found", "No account found. Please sign up first."); return; }
       const passwordHash = await sha256(pass + "|" + userData.kdfSalt);
       const pinHash = await sha256(pin + "|" + userData.pinSalt);
-      
-      console.log("Hashes generated, attempting login...");
       await loginUser(email, passwordHash, pinHash);
-      
-    } catch (error) {
-      console.error("Login error:", error);
-      toast("danger", "Login Failed", error.message || "Server error. Please try again.");
-    }
+    } catch (error) { toast("danger", "Login Failed", error.message || "Server error. Please try again."); }
   }
 });
 
-// Tab buttons
+// ==================== Event Listeners ====================
 $("tabLogin").addEventListener("click", () => toggleMode("login"));
 $("tabSignup").addEventListener("click", () => toggleMode("signup"));
-
-// Theme and About buttons
 $("themeBtn").addEventListener("click", toggleTheme);
 $("aboutBtn").addEventListener("click", openAbout);
 $("themeToggleBtn").addEventListener("click", toggleTheme);
 $("openAboutBtn").addEventListener("click", openAbout);
 $("closeAboutBtn").addEventListener("click", closeAbout);
 $("refreshCaptchaBtn").addEventListener("click", generateCaptcha);
-
-// Navigation
 $("sidebarLogo").addEventListener("click", () => showView("home"));
 $("nav-home").addEventListener("click", () => showView("home"));
 $("nav-diary").addEventListener("click", () => showView("diary"));
@@ -1186,28 +1104,17 @@ $("nav-settings").addEventListener("click", () => showView("settings"));
 $("logoutBtn").addEventListener("click", () => logout());
 $("hamburgerBtn").addEventListener("click", toggleDrawer);
 $("drawerBackdrop").addEventListener("click", closeDrawer);
-
-// Diary
 $("diarySearch").addEventListener("input", renderDiary);
 $("dateFilter").addEventListener("change", renderDiary);
 $("sortMode").addEventListener("change", renderDiary);
 $("moodFilter").addEventListener("change", renderDiary);
 $("quickSaveBtn").addEventListener("click", quickSave);
 $("newEntryBtn").addEventListener("click", () => openEditor());
-
-// Editor
 $("closeEditorBtn").addEventListener("click", closeEditor);
 $("cancelEditorBtn").addEventListener("click", closeEditor);
 $("saveEditorBtn").addEventListener("click", saveFromEditor);
 $("eBody").addEventListener("input", updatePreview);
-$("eImage").addEventListener("change", (e) => {
-  let f = e.target.files[0]; if(!f) return;
-  let r = new FileReader();
-  r.onload = () => { editingImage = r.result; $("imagePreview").src = editingImage; $("imagePreview").classList.remove("hidden"); };
-  r.readAsDataURL(f);
-});
-
-// Settings
+$("eImage").addEventListener("change", (e) => { let f = e.target.files[0]; if(!f) return; let r = new FileReader(); r.onload = () => { editingImage = r.result; $("imagePreview").src = editingImage; $("imagePreview").classList.remove("hidden"); }; r.readAsDataURL(f); });
 $("changePhotoBtn").addEventListener("click", () => $("photoInput").click());
 $("photoInput").addEventListener("change", uploadPhoto);
 $("exportDataBtn").addEventListener("click", exportData);
@@ -1217,8 +1124,6 @@ $("importBtn").addEventListener("click", () => $("importFile").click());
 $("importFile").addEventListener("change", importData);
 $("sendRequestBtn").addEventListener("click", addFriendAction);
 $("togglePinBtn").addEventListener("click", togglePinVisibility);
-
-// Recovery
 $("forgotPasswordBtn").addEventListener("click", openRecoveryModal);
 $("closeRecoveryModalBtn").addEventListener("click", closeRecoveryModal);
 $("backToLoginBtn").addEventListener("click", closeRecoveryModal);
@@ -1226,23 +1131,19 @@ $("resetAccountBtn").addEventListener("click", handleAccountReset);
 $("refreshRecoveryCaptchaBtn").addEventListener("click", generateRecoveryCaptcha);
 $("recoveryModal").addEventListener("click", (e) => { if (e.target === $("recoveryModal")) closeRecoveryModal(); });
 
-// Settings tabs
 initSettingsTabs();
 
-// Make functions global for onclick
 window.shareToFriend = shareToFriend;
 window.editEntry = editEntry;
 window.deleteEntry = deleteEntry;
 window.acceptFriendRequest = acceptFriendRequest;
 window.unfriendFriend = unfriendFriend;
 
-// Keyboard shortcuts
 document.addEventListener("keydown", (e) => {
   if(e.ctrlKey && e.key.toLowerCase() === "k"){ e.preventDefault(); if($("app").style.display !== "none") openEditor(); }
   if(e.key === "Escape" && $("editorBackdrop").style.display === "flex") closeEditor();
 });
 
-// Initialize
 (function init(){
   let savedTheme = localStorage.getItem(LS_THEME);
   applyTheme(savedTheme || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
