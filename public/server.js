@@ -8,288 +8,110 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json());
 
-const MONGO_URL = process.env.MONGO_URL || "mongodb+srv://Archie:Archie1225@cluster0.7e4s845.mongodb.net/myjournal?retryWrites=true&w=majority";
+// CONNECT MONGODB
+mongoose.connect(process.env.MONGO_URL)
+  .then(() => console.log("MongoDB Connected"))
+  .catch(err => console.log(err));
 
-mongoose.connect(MONGO_URL)
-  .then(() => console.log("✅ Connected to MongoDB Atlas!"))
-  .catch(err => console.error("❌ MongoDB Connection Error:", err));
+/* =========================
+   SCHEMAS
+========================= */
 
-// ==================== SCHEMAS ====================
 const userSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true, lowercase: true },
-  name: { type: String, required: true },
-  passwordHash: { type: String, required: true },
-  pinHash: { type: String, required: true },
-  kdfSalt: { type: String, required: true },
-  pinSalt: { type: String, required: true },
-  photo: { type: String, default: null },
-  encryptedVault: { iv: { type: String, default: "" }, data: { type: String, default: "" } },
-  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  friendRequests: [{
-    from: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    fromEmail: { type: String },
-    status: { type: String, enum: ['pending', 'accepted', 'rejected'], default: 'pending' },
-    createdAt: { type: Date, default: Date.now }
-  }],
-  lastSync: { type: Date, default: Date.now },
+  username: String,
+  password: String,
+  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
+});
+
+const journalSchema = new mongoose.Schema({
+  userId: String,
+  title: String,
+  content: String,
   createdAt: { type: Date, default: Date.now }
 });
 
-const sharedEntrySchema = new mongoose.Schema({
-  from: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  to: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  fromEmail: { type: String, required: true },
-  toEmail: { type: String, required: true },
-  title: { type: String, default: "" },
-  body: { type: String, default: "" },
-  mood: { type: String, default: "" },
-  date: { type: String, default: "" },
-  image: { type: String, default: null },
-  tags: [{ type: String }],
-  sharedAt: { type: Date, default: Date.now },
-  read: { type: Boolean, default: false }
-});
-
 const User = mongoose.model("User", userSchema);
-const SharedEntry = mongoose.model("SharedEntry", sharedEntrySchema);
+const Journal = mongoose.model("Journal", journalSchema);
 
-function cleanUser(user) {
-  return { id: user._id, email: user.email, name: user.name, photo: user.photo, kdfSalt: user.kdfSalt, encryptedVault: user.encryptedVault, lastSync: user.lastSync };
-}
+/* =========================
+   USER ROUTES
+========================= */
 
-// ==================== AUTH ROUTES ====================
-app.post("/api/signup", async (req, res) => {
+// SIGNUP
+app.post("/signup", async (req, res) => {
   try {
-    console.log("📥 SIGNUP REQUEST RECEIVED");
-    console.log("Request body keys:", Object.keys(req.body));
-    
-    const { email, name, passwordHash, pinHash, kdfSalt, pinSalt, photo, encryptedVault } = req.body;
-    
-    const missingFields = [];
-    if (!email) missingFields.push("email");
-    if (!name) missingFields.push("name");
-    if (!passwordHash) missingFields.push("passwordHash");
-    if (!pinHash) missingFields.push("pinHash");
-    if (!kdfSalt) missingFields.push("kdfSalt");
-    if (!pinSalt) missingFields.push("pinSalt");
-    
-    if (missingFields.length > 0) {
-      console.log("❌ Missing fields:", missingFields);
-      return res.status(400).json({ error: `Missing required fields: ${missingFields.join(", ")}` });
-    }
-    
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      console.log("❌ Email already exists:", email);
-      return res.status(400).json({ error: "Email already registered" });
-    }
-    
-    const user = new User({
-      email: email.toLowerCase(),
-      name,
-      passwordHash,
-      pinHash,
-      kdfSalt,
-      pinSalt,
-      photo: photo || null,
-      encryptedVault: encryptedVault || { iv: "", data: "" }
-    });
-    
+    const user = new User(req.body);
     await user.save();
-    console.log(`✅ New user created: ${email}`);
-    res.json(cleanUser(user));
-  } catch (err) {
-    console.error("Signup error:", err);
-    res.status(500).json({ error: "Server error: " + err.message });
-  }
-});
-
-app.post("/api/login", async (req, res) => {
-  try {
-    const { email, passwordHash, pinHash } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) return res.status(401).json({ error: "Invalid credentials" });
-    if (user.passwordHash !== passwordHash || user.pinHash !== pinHash) return res.status(401).json({ error: "Invalid credentials" });
-    user.lastSync = new Date();
-    await user.save();
-    res.json(cleanUser(user));
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-app.post("/api/user/find", async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.json({ email: user.email, kdfSalt: user.kdfSalt, pinSalt: user.pinSalt });
+    res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/user/update", async (req, res) => {
+// LOGIN (simple version)
+app.post("/login", async (req, res) => {
   try {
-    const { email, encryptedVault, photo, name } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) return res.status(404).json({ error: "User not found" });
-    if (encryptedVault) user.encryptedVault = encryptedVault;
-    if (photo !== undefined) user.photo = photo;
-    if (name) user.name = name;
-    user.lastSync = new Date();
-    await user.save();
-    res.json({ message: "User updated", user: cleanUser(user) });
+    const user = await User.findOne(req.body);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ==================== FRIEND ROUTES ====================
-app.post("/api/friends/request", async (req, res) => {
+/* =========================
+   FRIEND SYSTEM
+========================= */
+
+app.post("/add-friend", async (req, res) => {
   try {
-    const { userEmail, friendEmail } = req.body;
-    const user = await User.findOne({ email: userEmail.toLowerCase() });
-    const friend = await User.findOne({ email: friendEmail.toLowerCase() });
-    if (!user || !friend) return res.status(404).json({ error: "User not found" });
-    if (user._id.toString() === friend._id.toString()) return res.status(400).json({ error: "Cannot add yourself" });
-    if (user.friends.includes(friend._id)) return res.status(400).json({ error: "Already friends" });
-    const existingRequest = friend.friendRequests.find(req => req.from.toString() === user._id.toString() && req.status === 'pending');
-    if (existingRequest) return res.status(400).json({ error: "Friend request already sent" });
-    friend.friendRequests.push({ from: user._id, fromEmail: user.email, status: 'pending', createdAt: new Date() });
-    await friend.save();
-    res.json({ message: "Friend request sent" });
+    const { userId, friendId } = req.body;
+
+    await User.findByIdAndUpdate(userId, {
+      $push: { friends: friendId }
+    });
+
+    res.json({ message: "Friend added" });
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/friends/accept", async (req, res) => {
+/* =========================
+   JOURNAL SYSTEM
+========================= */
+
+app.post("/journal", async (req, res) => {
   try {
-    const { userEmail, requestId } = req.body;
-    const user = await User.findOne({ email: userEmail.toLowerCase() });
-    if (!user) return res.status(404).json({ error: "User not found" });
-    const request = user.friendRequests.id(requestId);
-    if (!request) return res.status(404).json({ error: "Request not found" });
-    request.status = 'accepted';
-    user.friends.push(request.from);
-    await user.save();
-    const requester = await User.findById(request.from);
-    if (requester && !requester.friends.includes(user._id)) {
-      requester.friends.push(user._id);
-      await requester.save();
-    }
-    res.json({ message: "Friend request accepted" });
+    const journal = new Journal(req.body);
+    await journal.save();
+    res.json(journal);
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/friends/list", async (req, res) => {
+app.get("/journals/:userId", async (req, res) => {
   try {
-    const { userEmail } = req.body;
-    const user = await User.findOne({ email: userEmail.toLowerCase() }).populate('friends', 'email name photo');
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.json({ friends: user.friends });
+    const journals = await Journal.find({ userId: req.params.userId });
+    res.json(journals);
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/friends/requests", async (req, res) => {
-  try {
-    const { userEmail } = req.body;
-    const user = await User.findOne({ email: userEmail.toLowerCase() }).populate('friendRequests.from', 'email name photo');
-    if (!user) return res.status(404).json({ error: "User not found" });
-    const pendingRequests = user.friendRequests.filter(req => req.status === 'pending');
-    res.json({ requests: pendingRequests });
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
-});
+/* =========================
+   SERVER START
+========================= */
 
-app.post("/api/friends/unfriend", async (req, res) => {
-  try {
-    const { userEmail, friendId, friendEmail } = req.body;
-    const user = await User.findOne({ email: userEmail.toLowerCase() });
-    const friend = await User.findById(friendId);
-    if (!user || !friend) return res.status(404).json({ error: "User not found" });
-    user.friends = user.friends.filter(id => id.toString() !== friendId);
-    await user.save();
-    friend.friends = friend.friends.filter(id => id.toString() !== user._id.toString());
-    await friend.save();
-    res.json({ message: "Unfriended successfully" });
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// ==================== SHARING ROUTES ====================
-app.post("/api/share", async (req, res) => {
-  try {
-    const { fromEmail, toEmail, title, body, mood, date, image, tags } = req.body;
-    const fromUser = await User.findOne({ email: fromEmail.toLowerCase() });
-    const toUser = await User.findOne({ email: toEmail.toLowerCase() });
-    if (!fromUser || !toUser) return res.status(404).json({ error: "User not found" });
-    if (!fromUser.friends.includes(toUser._id)) return res.status(403).json({ error: "Not friends" });
-    const sharedEntry = new SharedEntry({ from: fromUser._id, to: toUser._id, fromEmail: fromEmail.toLowerCase(), toEmail: toEmail.toLowerCase(), title: title || "", body: body || "", mood: mood || "", date: date || "", image: image || null, tags: tags || [] });
-    await sharedEntry.save();
-    res.json({ message: "Entry shared successfully" });
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-app.post("/api/shared/inbox", async (req, res) => {
-  try {
-    const { userEmail } = req.body;
-    const sharedEntries = await SharedEntry.find({ toEmail: userEmail.toLowerCase() }).sort({ sharedAt: -1 });
-    res.json({ shared: sharedEntries });
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// ==================== SYNC ROUTES ====================
-app.post("/api/sync/pull", async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.json({ encryptedVault: user.encryptedVault, lastSync: user.lastSync });
-  } catch (err) {
-    res.status(500).json({ error: "Pull failed" });
-  }
-});
-
-app.post("/api/sync/push", async (req, res) => {
-  try {
-    const { email, encryptedVault } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) return res.status(404).json({ error: "User not found" });
-    user.encryptedVault = encryptedVault;
-    user.lastSync = new Date();
-    await user.save();
-    res.json({ message: "Changes pushed successfully", lastSync: user.lastSync });
-  } catch (err) {
-    res.status(500).json({ error: "Push failed" });
-  }
-});
-
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
-
-// ==================== STATIC FILES ====================
 app.use(express.static(path.join(__dirname, "public")));
-app.get("*", (req, res) => {
+
+app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📡 API available at http://localhost:${PORT}/api`);
+  console.log("Server running on port " + PORT);
 });
