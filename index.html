@@ -130,39 +130,6 @@
       padding: 8px 16px; border-radius: 12px;
     }
     .link{ color: var(--primary); font-weight: 900; cursor:pointer; text-decoration: underline; }
-    
-    /* Center the forgot password and recovery links */
-    .hint {
-      text-align: center;
-    }
-    .hint .link {
-      display: inline-block;
-      cursor: pointer;
-    }
-    #backToLoginBtn {
-      display: block;
-      text-align: center;
-      cursor: pointer;
-    }
-    #resetAccountBtn {
-      width: 100%;
-    }
-    .divider {
-      text-align: center;
-      margin: 15px 0;
-      position: relative;
-    }
-    .divider::before, .divider::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      width: 45%;
-      height: 1px;
-      background: var(--border);
-    }
-    .divider::before { left: 0; }
-    .divider::after { right: 0; }
-    
     #app{ display:none; height:100vh; overflow:hidden;}
     .layout{ display:flex; height:100vh; }
     .sidebar{
@@ -378,6 +345,10 @@
     /* Recovery Modal Styles */
     .recovery-warning { background: color-mix(in oklab, var(--warn) 15%, transparent); border-left: 4px solid var(--warn); padding: 14px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 12px; font-size: 0.85rem; }
     .recovery-warning i { color: var(--warn); font-size: 1.2rem; }
+    .divider { text-align: center; margin: 15px 0; position: relative; color: var(--muted); font-size: 0.8rem; }
+    .divider::before, .divider::after { content: ""; position: absolute; top: 50%; width: 45%; height: 1px; background: var(--border); }
+    .divider::before { left: 0; }
+    .divider::after { right: 0; }
   </style>
 </head>
 <body>
@@ -431,7 +402,7 @@
         </form>
       </div>
       
-      <!-- Forgot Password Link - Centered -->
+      <!-- Forgot Password Link -->
       <div class="hint" style="margin-top: 12px;">
         <span class="link" id="forgotPasswordBtn">
           <i class="fas fa-key"></i> Forgot password or PIN?
@@ -790,6 +761,7 @@ async function loadUserData(){
   $("userAvatar").src = avatarUrl;
   $("topAvatar").src = avatarUrl;
   
+  // Update data stats
   const vault = await openVault();
   const posts = vault.posts || [];
   const dataEntryCount = $("dataEntryCount");
@@ -1050,6 +1022,7 @@ async function loadFriendsList(){
     const container = $("confirmedFriendsList");
     if(!container) return;
     const friends = data.friends || [];
+    // Update friend count in settings
     const dataFriendCount = $("dataFriendCount");
     if (dataFriendCount) dataFriendCount.innerText = friends.length;
     if(friends.length === 0){ container.innerHTML = '<p class="muted" style="text-align:center; padding:10px;">No friends added yet.</p>'; return; }
@@ -1109,7 +1082,7 @@ function togglePinVisibility(){
   if(!pinHidden){ setTimeout(() => { if(!pinHidden){ pinHidden = true; if(pinTextEl) pinTextEl.innerText = "••••••"; if(pinIconEl) pinIconEl.className = "fas fa-eye"; } }, 3000); }
 }
 
-// ==================== Auth Form Submit ====================
+// ==================== Event Listeners ====================
 $("authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   if(($("captchaInp").value || "").trim().toUpperCase() !== captchaCode){
@@ -1122,7 +1095,6 @@ $("authForm").addEventListener("submit", async (e) => {
   if(!email) return toast("warn", "Missing email", "Please enter your email.");
   if(!pass) return toast("warn", "Missing password", "Please enter your password.");
   if(!validPin(pin)) return toast("warn", "Invalid PIN", "PIN must be exactly 6 digits.");
-  
   if(authMode === "signup"){
     const name = $("regName").value.trim();
     if(!name || name.length < 2) return toast("warn", "Name required", "Enter your full name.");
@@ -1133,34 +1105,15 @@ $("authForm").addEventListener("submit", async (e) => {
     const pinHash = await sha256(pin + "|" + pinSalt);
     await signupUser(email, name, passwordHash, pinHash, kdfSalt, pinSalt);
   } else {
-    // LOGIN - Fetch salts from backend (cross-device fix)
-    try {
-      console.log("Attempting login for:", email);
-      
-      const findResponse = await fetch(`${API_URL}/api/user/find`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email })
-      });
-      
-      const userData = await findResponse.json();
-      console.log("Find user response:", findResponse.status, userData);
-      
-      if (!findResponse.ok || !userData.kdfSalt) {
-        toast("danger", "Account Not Found", "No account found with this email. Please sign up first.");
-        return;
-      }
-      
-      const passwordHash = await sha256(pass + "|" + userData.kdfSalt);
-      const pinHash = await sha256(pin + "|" + userData.pinSalt);
-      
-      console.log("Hashes generated, attempting login...");
-      await loginUser(email, passwordHash, pinHash);
-      
-    } catch (error) {
-      console.error("Login error:", error);
-      toast("danger", "Login Failed", error.message || "Server error. Please try again.");
+    let users = readUsers();
+    const user = users.find(u => u.email === email);
+    if (!user) {
+      toast("danger", "Account Not Found", "Please sign up first or check your email");
+      return;
     }
+    const passwordHash = await sha256(pass + "|" + user.kdfSalt);
+    const pinHash = await sha256(pin + "|" + user.pinSalt);
+    await loginUser(email, passwordHash, pinHash);
   }
 });
 
