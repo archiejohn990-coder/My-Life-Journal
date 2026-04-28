@@ -103,14 +103,26 @@ app.get("/journals/:userId", async (req, res) => {
 });
 
 /* =========================
-   SERVER START
+   SERVE STATIC FILES - FIX THIS SECTION
 ========================= */
 
+// IMPORTANT: Move this BEFORE your catch-all route
+// Serve static files from public directory
 app.use(express.static(path.join(__dirname, "public")));
 
+// If styles.css is in public folder, this will work
+// If your CSS is embedded in HTML, you don't need this line
+
+// For the root route - serve index.html
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
+
+// IMPORTANT: Remove the duplicate static middleware from here
+
+/* =========================
+   SERVER START
+========================= */
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on port " + PORT);
