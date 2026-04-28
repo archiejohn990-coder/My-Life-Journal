@@ -837,11 +837,8 @@ html {
     <p1>Trishan Laurito</p1>
   </div>
 </div>
-
-  <script>
-    <script>
+              <script>
     // ==================== CONFIGURATION ====================
-    // IMPORTANT: Replace this with your actual Render URL!
     const API_URL = 'https://my-life-journal.onrender.com'; // CHANGE THIS TO YOUR RENDER URL
     
     // Global variables
@@ -857,41 +854,55 @@ html {
     let resendCountdown = 0;
 
     // ==================== HELPER FUNCTIONS ====================
-    const $ = (id) => document.getElementById(id);
+    function $(id) { return document.getElementById(id); }
 
-    function escapeHtml(str) {
-        return String(str ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
-    }
-
-    function toast(type, title, msg) {
+    window.toast = function(type, title, msg) {
         const wrap = $("toastWrap");
+        if (!wrap) return;
         const el = document.createElement("div");
         el.className = "toast" + (type ? " " + type : "");
         el.innerHTML = `<i class="fas ${type === "danger" ? "fa-triangle-exclamation" : type === "warn" ? "fa-circle-exclamation" : "fa-circle-check"}"></i><div><div class="t-title">${escapeHtml(title)}</div><div class="t-msg">${escapeHtml(msg)}</div></div><button class="x" onclick="this.parentElement.remove()">✕</button>`;
         wrap.appendChild(el);
         setTimeout(() => { if (el && el.parentElement) el.remove(); }, 4500);
+    };
+
+    function escapeHtml(str) {
+        return String(str ?? "").replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
     }
 
-    function generateCaptcha() {
-        captchaCode = Math.random().toString(36).substring(2, 6).toUpperCase();
-        if ($("captchaBox")) $("captchaBox").innerText = captchaCode;
-        if ($("captchaInp")) $("captchaInp").value = "";
+    // ==================== CAPTCHA FUNCTIONS ====================
+    window.generateCaptcha = function() {
+        const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let result = '';
+        for (let i = 0; i < 4; i++) {
+            result += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        captchaCode = result;
+        const captchaBox = $("captchaBox");
+        if (captchaBox) captchaBox.innerText = captchaCode;
+        const captchaInp = $("captchaInp");
+        if (captchaInp) captchaInp.value = "";
+        console.log("Captcha generated:", captchaCode);
+    };
+
+    function verifyCaptcha() {
+        const userInput = $("captchaInp");
+        if (!userInput) return true;
+        const enteredCode = userInput.value.trim().toUpperCase();
+        if (enteredCode !== captchaCode) {
+            window.toast("danger", "Wrong Captcha", "Please enter the correct code");
+            window.generateCaptcha();
+            return false;
+        }
+        return true;
     }
 
-    function toggleMode(mode) {
-        authMode = mode;
-        const tabLogin = $("tabLogin");
-        const tabSignup = $("tabSignup");
-        const fieldName = $("fieldName");
-        const submitBtn = $("submitBtn");
-        if (tabLogin) tabLogin.classList.toggle("active", mode === "login");
-        if (tabSignup) tabSignup.classList.toggle("active", mode === "signup");
-        if (fieldName) fieldName.classList.toggle("hidden", mode === "login");
-        if (submitBtn) submitBtn.innerText = mode === "login" ? "Login" : "Create Account";
-        generateCaptcha();
-    }
-
-    // Theme Management
+    // ==================== THEME MANAGEMENT ====================
     function applyTheme(theme) {
         document.documentElement.setAttribute("data-theme", theme);
         localStorage.setItem("journal_theme", theme);
@@ -900,6 +911,7 @@ html {
     window.toggleTheme = function() {
         const cur = localStorage.getItem("journal_theme") || "light";
         applyTheme(cur === "light" ? "dark" : "light");
+        window.toast("", "Theme", `Switched to ${cur === "light" ? "dark" : "light"} mode`);
     };
 
     window.openAbout = function() {
@@ -912,11 +924,29 @@ html {
         if (aboutModal) aboutModal.style.display = "none";
     };
 
-    (function initTheme() {
+    // Initialize theme
+    (function() {
         const saved = localStorage.getItem("journal_theme");
         if (saved) applyTheme(saved);
         else applyTheme(window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     })();
+
+    // ==================== TOGGLE MODE ====================
+    window.toggleMode = function(mode) {
+        authMode = mode;
+        const tabLogin = $("tabLogin");
+        const tabSignup = $("tabSignup");
+        const fieldName = $("fieldName");
+        const submitBtn = $("submitBtn");
+        
+        if (tabLogin) tabLogin.classList.toggle("active", mode === "login");
+        if (tabSignup) tabSignup.classList.toggle("active", mode === "signup");
+        if (fieldName) fieldName.classList.toggle("hidden", mode === "login");
+        if (submitBtn) submitBtn.innerText = mode === "login" ? "Login" : "Create Account";
+        
+        window.generateCaptcha();
+        console.log("Mode toggled to:", mode);
+    };
 
     // ==================== API CALLS ====================
     async function apiCall(endpoint, options = {}) {
@@ -934,7 +964,6 @@ html {
                 const error = await response.json();
                 throw new Error(error.error || `HTTP ${response.status}`);
             }
-            
             return await response.json();
         } catch (err) {
             console.error(`API Error ${endpoint}:`, err);
@@ -955,13 +984,13 @@ html {
                 currentUser = data.user;
                 localStorage.setItem('authToken', authToken);
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                toast("success", "Welcome!", `Hello ${currentUser.name}`);
+                window.toast("success", "Welcome!", `Hello ${currentUser.name}`);
                 await initApp();
                 return true;
             }
             return false;
         } catch (err) {
-            toast("danger", "Login Failed", err.message || "Cannot connect to server");
+            window.toast("danger", "Login Failed", err.message || "Cannot connect to server");
             return false;
         }
     }
@@ -978,13 +1007,13 @@ html {
                 currentUser = data.user;
                 localStorage.setItem('authToken', authToken);
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                toast("success", "Account Created!", "Welcome to My Life Journal");
+                window.toast("success", "Account Created!", "Welcome to My Life Journal");
                 await initApp();
                 return true;
             }
             return false;
         } catch (err) {
-            toast("danger", "Signup Failed", err.message || "Cannot connect to server");
+            window.toast("danger", "Signup Failed", err.message || "Cannot connect to server");
             return false;
         }
     }
@@ -997,7 +1026,7 @@ html {
         if (appSection) appSection.style.display = "block";
         
         await hydrateUserUI();
-        showView("home");
+        window.showView("home");
         startHeartbeat();
         await renderDiary();
         await updateStats();
@@ -1040,9 +1069,8 @@ html {
     }
 
     window.toggleOnlineStatus = function() {
-        const newStatus = currentUser?.onlineStatus !== 'online';
-        updateOnlineStatus(newStatus);
-        toast("", "Status Updated", `You are now ${newStatus ? 'Online' : 'Offline'}`);
+        updateOnlineStatus(currentUser?.onlineStatus !== 'online');
+        window.toast("", "Status Updated", `You are now ${currentUser?.onlineStatus !== 'online' ? 'Online' : 'Offline'}`);
     };
 
     function startHeartbeat() {
@@ -1063,6 +1091,7 @@ html {
 
     // ==================== NAVIGATION ====================
     window.showView = function(v) {
+        console.log("Showing view:", v);
         const views = ["home", "diary", "stats", "friends", "settings"];
         views.forEach(id => {
             const el = $("view-" + id);
@@ -1085,26 +1114,27 @@ html {
         }
     };
 
-    function toggleDrawer() {
+    window.toggleDrawer = function() {
         const side = $("sidebar");
         const back = $("drawerBackdrop");
         if (side) side.classList.toggle("open");
         if (back) back.classList.toggle("show");
-    }
+    };
 
-    function closeDrawer() {
+    window.closeDrawer = function() {
         const side = $("sidebar");
         const back = $("drawerBackdrop");
         if (side) side.classList.remove("open");
         if (back) back.classList.remove("show");
-    }
+    };
 
-    // ==================== FRIEND SYSTEM (CROSS-DEVICE) ====================
+    // ==================== FRIEND SYSTEM ====================
     window.addFriendAction = async function() {
+        console.log("addFriendAction called");
         const emailInput = $("friendEmail");
         const targetEmail = emailInput?.value.trim().toLowerCase();
-        if (!targetEmail) return toast("warn", "Error", "Please enter an email");
-        if (targetEmail === currentUser.email.toLowerCase()) return toast("warn", "Error", "Cannot add yourself");
+        if (!targetEmail) return window.toast("warn", "Error", "Please enter an email");
+        if (targetEmail === currentUser.email.toLowerCase()) return window.toast("warn", "Error", "Cannot add yourself");
         
         try {
             const data = await apiCall('/api/friends/request', {
@@ -1113,17 +1143,18 @@ html {
             });
             
             if (data.success) {
-                toast("success", "Request Sent", `Friend request sent to ${targetEmail}`);
+                window.toast("success", "Request Sent", `Friend request sent to ${targetEmail}`);
                 if (emailInput) emailInput.value = "";
             } else {
-                toast("danger", "Error", data.error || "Failed to send request");
+                window.toast("danger", "Error", data.error || "Failed to send request");
             }
         } catch (err) {
-            toast("danger", "Error", err.message || "Could not connect to server");
+            window.toast("danger", "Error", err.message || "Could not connect to server");
         }
     };
 
     window.acceptFriend = async function(fromUserId) {
+        console.log("acceptFriend called:", fromUserId);
         try {
             const data = await apiCall('/api/friends/accept', {
                 method: 'POST',
@@ -1131,18 +1162,19 @@ html {
             });
             
             if (data.success) {
-                toast("success", "Accepted!", "You are now friends");
+                window.toast("success", "Accepted!", "You are now friends");
                 await checkIncomingRequests();
                 await renderFriendsList();
             } else {
-                toast("danger", "Error", data.error || "Failed to accept request");
+                window.toast("danger", "Error", data.error || "Failed to accept request");
             }
         } catch (err) {
-            toast("danger", "Error", err.message || "Could not connect to server");
+            window.toast("danger", "Error", err.message || "Could not connect to server");
         }
     };
 
     window.unfriendFriend = async function(friendId, friendEmail) {
+        console.log("unfriendFriend called:", friendId, friendEmail);
         if (!confirm(`Are you sure you want to unfriend ${friendEmail}?`)) return;
         
         try {
@@ -1152,13 +1184,13 @@ html {
             });
             
             if (data.success) {
-                toast("", "Unfriended", `You are no longer friends with ${friendEmail}`);
+                window.toast("", "Unfriended", `You are no longer friends with ${friendEmail}`);
                 await renderFriendsList();
             } else {
-                toast("danger", "Error", data.error || "Failed to unfriend");
+                window.toast("danger", "Error", data.error || "Failed to unfriend");
             }
         } catch (err) {
-            toast("danger", "Error", err.message || "Could not connect to server");
+            window.toast("danger", "Error", err.message || "Could not connect to server");
         }
     };
 
@@ -1205,8 +1237,6 @@ html {
             if (onlineCountSpan) onlineCountSpan.innerText = `(${onlineCount} online)`;
         } catch (err) {
             console.error("Failed to load friends:", err);
-            const listContainer = $("confirmedFriendsList");
-            if (listContainer) listContainer.innerHTML = '<div class="card empty">Error loading friends. Please refresh.</div>';
         }
     }
 
@@ -1330,6 +1360,7 @@ html {
     }
 
     window.openEditor = function(entry = null) {
+        console.log("openEditor called");
         editingId = entry?._id || null;
         const editorTitle = $("editorTitle");
         if (editorTitle) editorTitle.innerText = editingId ? "Edit Entry" : "New Entry";
@@ -1365,6 +1396,7 @@ html {
     };
 
     window.closeEditor = function() {
+        console.log("closeEditor called");
         const editorBackdrop = $("editorBackdrop");
         if (editorBackdrop) editorBackdrop.style.display = "none";
         editingId = null;
@@ -1396,7 +1428,7 @@ html {
         if (!file) return;
         if (file.size > 1000000) {
             e.target.value = "";
-            return toast("warn", "Image too large", "Choose an image under ~1MB.");
+            return window.toast("warn", "Image too large", "Choose an image under ~1MB.");
         }
         const reader = new FileReader();
         reader.onload = () => {
@@ -1406,19 +1438,20 @@ html {
                 imagePreview.src = editingImageB64;
                 imagePreview.classList.remove("hidden");
             }
-            toast("", "Attached", "Image added to this entry.");
+            window.toast("", "Attached", "Image added to this entry.");
         };
         reader.readAsDataURL(file);
     };
 
     window.saveFromEditor = async function() {
+        console.log("saveFromEditor called");
         const title = ($("eTitle")?.value || "").trim();
         const mood = $("eMood")?.value || "😐 Neutral";
         const date = $("eDate")?.value || new Date().toISOString().slice(0, 10);
         const tags = ($("eTags")?.value || "").split(",").map(t => t.trim()).filter(Boolean).map(t => t.toLowerCase());
         const body = ($("eBody")?.value || "").trim();
         
-        if (!title && !body) return toast("warn", "Empty entry", "Add a title or body.");
+        if (!title && !body) return window.toast("warn", "Empty entry", "Add a title or body.");
         
         const inline = extractInlineTags(body);
         const mergedTags = Array.from(new Set([...tags, ...inline]));
@@ -1438,53 +1471,56 @@ html {
             }
             
             if (data.success) {
-                toast("", editingId ? "Updated" : "Saved", editingId ? "Entry updated." : "New entry added.");
-                closeEditor();
+                window.toast("", editingId ? "Updated" : "Saved", editingId ? "Entry updated." : "New entry added.");
+                window.closeEditor();
                 await renderDiary();
                 await updateStats();
             } else {
-                toast("danger", "Error", data.error || "Failed to save entry");
+                window.toast("danger", "Error", data.error || "Failed to save entry");
             }
         } catch (err) {
-            toast("danger", "Error", err.message || "Could not save entry");
+            window.toast("danger", "Error", err.message || "Could not save entry");
         }
     };
 
-    async function editEntry(id) {
+    window.editEntry = async function(id) {
+        console.log("editEntry called:", id);
         try {
             const data = await apiCall(`/api/journal/get/${id}`);
             if (data.entry) {
                 window.openEditor(data.entry);
             }
         } catch (err) {
-            toast("danger", "Error", "Could not load entry");
+            window.toast("danger", "Error", "Could not load entry");
         }
-    }
+    };
 
-    async function deleteEntry(id) {
+    window.deleteEntry = async function(id) {
+        console.log("deleteEntry called:", id);
         if (!confirm("Delete this entry?")) return;
         try {
             const data = await apiCall(`/api/journal/delete/${id}`, {
                 method: 'DELETE'
             });
             if (data.success) {
-                toast("", "Deleted", "Entry removed.");
+                window.toast("", "Deleted", "Entry removed.");
                 await renderDiary();
                 await updateStats();
             } else {
-                toast("danger", "Error", data.error || "Failed to delete");
+                window.toast("danger", "Error", data.error || "Failed to delete");
             }
         } catch (err) {
-            toast("danger", "Error", "Could not delete entry");
+            window.toast("danger", "Error", "Could not delete entry");
         }
-    }
+    };
 
     window.quickSave = async function() {
+        console.log("quickSave called");
         const title = ($("quickTitle")?.value || "").trim();
         const mood = $("quickMood")?.value || "😐 Neutral";
         const tags = ($("quickTags")?.value || "").split(",").map(t => t.trim()).filter(Boolean).map(t => t.toLowerCase());
         const body = ($("quickBody")?.value || "").trim();
-        if (!body && !title) return toast("warn", "Empty entry", "Write something first.");
+        if (!body && !title) return window.toast("warn", "Empty entry", "Write something first.");
         
         const inline = extractInlineTags(body);
         const mergedTags = Array.from(new Set([...tags, ...inline]));
@@ -1500,18 +1536,19 @@ html {
                 if ($("quickTitle")) $("quickTitle").value = "";
                 if ($("quickTags")) $("quickTags").value = "";
                 if ($("quickBody")) $("quickBody").value = "";
-                toast("", "Saved", "Quick memory added.");
+                window.toast("", "Saved", "Quick memory added.");
                 await renderDiary();
                 await updateStats();
             } else {
-                toast("danger", "Error", data.error || "Failed to save");
+                window.toast("danger", "Error", data.error || "Failed to save");
             }
         } catch (err) {
-            toast("danger", "Error", "Could not save entry");
+            window.toast("danger", "Error", "Could not save entry");
         }
     };
 
     window.shareEntry = async function(entryId) {
+        console.log("shareEntry called:", entryId);
         const friendEmail = prompt("Enter friend's email to share this entry:");
         if (!friendEmail) return;
         
@@ -1521,12 +1558,12 @@ html {
                 body: JSON.stringify({ toUserEmail: friendEmail, entryId })
             });
             if (data.success) {
-                toast("success", "Shared!", "Entry sent to " + friendEmail);
+                window.toast("success", "Shared!", "Entry sent to " + friendEmail);
             } else {
-                toast("danger", "Error", data.error || "Failed to share");
+                window.toast("danger", "Error", data.error || "Failed to share");
             }
         } catch (err) {
-            toast("danger", "Error", "Could not share entry");
+            window.toast("danger", "Error", "Could not share entry");
         }
     };
 
@@ -1639,8 +1676,9 @@ html {
         return `rgba(${r},${g},${b},${a})`;
     }
 
-    // ==================== PASSWORD RECOVERY (CROSS-DEVICE) ====================
+    // ==================== PASSWORD RECOVERY ====================
     window.showRecovery = function() {
+        console.log("showRecovery called");
         const loginContainer = $("loginFormContainer");
         const recoveryContainer = $("recoveryContainer");
         if (loginContainer) loginContainer.style.display = "none";
@@ -1649,6 +1687,7 @@ html {
     };
 
     window.hideRecovery = function() {
+        console.log("hideRecovery called");
         const loginContainer = $("loginFormContainer");
         const recoveryContainer = $("recoveryContainer");
         if (loginContainer) loginContainer.style.display = "block";
@@ -1667,11 +1706,10 @@ html {
         if (step2) step2.style.display = "none";
     }
 
-    window.showRecoveryStep1 = showRecoveryStep1;
-
     window.sendRecoveryOTP = async function() {
+        console.log("sendRecoveryOTP called");
         const email = $("recoverEmail")?.value.trim().toLowerCase();
-        if (!email) return toast("warn", "Email Required", "Please enter your email address");
+        if (!email) return window.toast("warn", "Email Required", "Please enter your email address");
         
         try {
             const data = await apiCall('/api/forgot-password', {
@@ -1682,9 +1720,9 @@ html {
             if (data.success) {
                 recoveryEmail = email;
                 if (data.demoOtp) {
-                    toast("info", "Demo Mode", `Your OTP code is: ${data.demoOtp}`);
+                    window.toast("info", "Demo Mode", `Your OTP code is: ${data.demoOtp}`);
                 } else {
-                    toast("success", "Code Sent", "Check your email for the OTP code");
+                    window.toast("success", "Code Sent", "Check your email for the OTP code");
                 }
                 
                 const step1 = $("recoveryStep1");
@@ -1693,10 +1731,10 @@ html {
                 if (step2) step2.style.display = "block";
                 startResendTimer();
             } else {
-                toast("danger", "Error", data.error || "User not found");
+                window.toast("danger", "Error", data.error || "User not found");
             }
         } catch (err) {
-            toast("danger", "Error", err.message || "Could not send OTP");
+            window.toast("danger", "Error", err.message || "Could not send OTP");
         }
     };
 
@@ -1722,29 +1760,30 @@ html {
 
     window.resendOTP = function() {
         if (resendCountdown > 0) {
-            toast("warn", "Wait", `Please wait ${resendCountdown} seconds before resending`);
+            window.toast("warn", "Wait", `Please wait ${resendCountdown} seconds before resending`);
             return;
         }
         window.sendRecoveryOTP();
     };
 
     window.verifyOTPAndReset = async function() {
+        console.log("verifyOTPAndReset called");
         const otp = $("otpCode")?.value.trim();
         const newPassword = $("newPass")?.value;
         const newPin = $("newPin")?.value;
         
         if (!otp || otp.length !== 6) {
-            toast("warn", "Invalid OTP", "Please enter the 6-digit code");
+            window.toast("warn", "Invalid OTP", "Please enter the 6-digit code");
             return;
         }
         
         if (!newPassword || newPassword.length < 8) {
-            toast("warn", "Weak Password", "Password must be at least 8 characters");
+            window.toast("warn", "Weak Password", "Password must be at least 8 characters");
             return;
         }
         
         if (!newPin || !/^\d{6}$/.test(newPin)) {
-            toast("warn", "Invalid PIN", "PIN must be exactly 6 digits");
+            window.toast("warn", "Invalid PIN", "PIN must be exactly 6 digits");
             return;
         }
         
@@ -1755,20 +1794,20 @@ html {
             });
             
             if (data.success) {
-                toast("success", "Password Reset", "Your password has been reset. Please login with your new credentials.");
+                window.toast("success", "Password Reset", "Your password has been reset. Please login with your new credentials.");
                 
                 if ($("recoverEmail")) $("recoverEmail").value = "";
                 if ($("otpCode")) $("otpCode").value = "";
                 if ($("newPass")) $("newPass").value = "";
                 if ($("newPin")) $("newPin").value = "";
-                hideRecovery();
+                window.hideRecovery();
                 
                 if (resendTimer) clearInterval(resendTimer);
             } else {
-                toast("danger", "Error", data.error || "Failed to reset password");
+                window.toast("danger", "Error", data.error || "Failed to reset password");
             }
         } catch (err) {
-            toast("danger", "Error", err.message || "Could not reset password");
+            window.toast("danger", "Error", err.message || "Could not reset password");
         }
     };
 
@@ -1778,7 +1817,7 @@ html {
         if (!file) return;
         if (file.size > 2000000) {
             e.target.value = "";
-            return toast("warn", "Too large", "Please choose an image under 2MB.");
+            return window.toast("warn", "Too large", "Please choose an image under 2MB.");
         }
         const reader = new FileReader();
         reader.onload = async () => {
@@ -1791,19 +1830,19 @@ html {
                     currentUser.photo = reader.result;
                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
                     hydrateUserUI();
-                    toast("", "Updated", "Profile photo updated.");
+                    window.toast("", "Updated", "Profile photo updated.");
                 }
             } catch (err) {
-                toast("danger", "Error", "Could not update photo");
+                window.toast("danger", "Error", "Could not update photo");
             }
             e.target.value = "";
         };
         reader.readAsDataURL(file);
     };
 
-    window.resetPhoto = function() { toast("info", "Coming Soon", "Photo reset coming soon!"); };
-    window.exportData = function() { toast("info", "Coming Soon", "Export coming soon!"); };
-    window.importData = function(event) { toast("info", "Coming Soon", "Import coming soon!"); };
+    window.resetPhoto = function() { window.toast("info", "Coming Soon", "Photo reset coming soon!"); };
+    window.exportData = function() { window.toast("info", "Coming Soon", "Export coming soon!"); };
+    window.importData = function(event) { window.toast("info", "Coming Soon", "Import coming soon!"); };
     
     window.wipeMyData = async function() {
         if (!confirm("WARNING: This will delete ALL your data! This action cannot be undone. Continue?")) return;
@@ -1812,16 +1851,16 @@ html {
                 method: 'DELETE'
             });
             if (data.success) {
-                toast("", "Deleted", "Your account has been deleted.");
-                logout(true);
+                window.toast("", "Deleted", "Your account has been deleted.");
+                window.logout(true);
             }
         } catch (err) {
-            toast("danger", "Error", "Could not delete account");
+            window.toast("danger", "Error", "Could not delete account");
         }
     };
 
     window.logout = function(showToast) {
-        if (showToast) toast("", "Logged out", "See you next time!");
+        if (showToast) window.toast("", "Logged out", "See you next time!");
         stopHeartbeat();
         localStorage.removeItem('authToken');
         localStorage.removeItem('currentUser');
@@ -1835,11 +1874,7 @@ html {
         const recoveryContainer = $("recoveryContainer");
         if (loginContainer) loginContainer.classList.toggle("hidden", show);
         if (recoveryContainer) recoveryContainer.classList.toggle("hidden", !show);
-        generateCaptcha();
-    };
-
-    window.handleRecovery = async function() {
-        toast("warn", "Contact Support", "Password recovery requires admin assistance.");
+        window.generateCaptcha();
     };
 
     // ==================== LOGIN FORM HANDLER ====================
@@ -1847,25 +1882,22 @@ html {
     if (authForm) {
         authForm.addEventListener("submit", async (e) => {
             e.preventDefault();
+            console.log("Form submitted");
             
-            const captchaInp = $("captchaInp");
-            if (captchaInp && (captchaInp.value || "").trim().toUpperCase() !== captchaCode) {
-                generateCaptcha();
-                return toast("danger", "Wrong captcha", "Try again.");
-            }
+            if (!verifyCaptcha()) return;
             
             const email = $("email")?.value.trim().toLowerCase();
             const password = $("pass")?.value;
             const pin = ($("pin")?.value || "").trim();
             
-            if (!email) return toast("warn", "Missing email", "Please enter your email.");
-            if (!password) return toast("warn", "Missing password", "Please enter your password.");
-            if (!/^\d{6}$/.test(pin)) return toast("warn", "Invalid PIN", "PIN must be exactly 6 digits.");
+            if (!email) return window.toast("warn", "Missing email", "Please enter your email.");
+            if (!password) return window.toast("warn", "Missing password", "Please enter your password.");
+            if (!/^\d{6}$/.test(pin)) return window.toast("warn", "Invalid PIN", "PIN must be exactly 6 digits.");
             
             if (authMode === "signup") {
                 const name = $("regName")?.value.trim();
-                if (!name || name.length < 2) return toast("warn", "Name required", "Enter your full name.");
-                if (password.length < 8) return toast("warn", "Weak password", "Use at least 8 characters.");
+                if (!name || name.length < 2) return window.toast("warn", "Name required", "Enter your full name.");
+                if (password.length < 8) return window.toast("warn", "Weak password", "Use at least 8 characters.");
                 await signup(name, email, password, pin);
             } else {
                 await login(email, password, pin);
@@ -1897,8 +1929,9 @@ html {
 
     // ==================== INITIALIZE ====================
     window.addEventListener("load", async () => {
-        generateCaptcha();
-        toggleMode("login");
+        console.log("Page loaded, initializing...");
+        window.generateCaptcha();
+        window.toggleMode("login");
         
         if (authToken && localStorage.getItem('currentUser')) {
             currentUser = JSON.parse(localStorage.getItem('currentUser'));
@@ -1918,6 +1951,5 @@ html {
         stopHeartbeat();
     });
 </script>
-  </script>
 </body>
 </html>
