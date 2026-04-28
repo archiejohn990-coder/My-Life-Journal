@@ -461,6 +461,39 @@ html {
 .member p {
   margin-top: 10px;
 }
+
+/* Friends section improvements */
+#confirmedFriendsList .card {
+    transition: transform 0.2s;
+}
+
+#confirmedFriendsList .card:hover {
+    transform: translateX(5px);
+}
+
+#sharedInboxContainer .card {
+    transition: all 0.2s;
+}
+
+#sharedInboxContainer .card:hover {
+    border-left-width: 6px;
+}
+
+/* Pending requests styling */
+#pendingRequests > div {
+    animation: slideIn 0.2s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
   </style>
 </head>
 
@@ -543,8 +576,8 @@ html {
         <div class="card notice" style="padding:12px; margin-top:10px;">
           <div style="font-weight:950; margin-bottom:4px;">Important</div>
           <div style="font-size:.9rem; color: var(--muted);">
-            Because entries are encrypted using your password, “reset password” can’t decrypt old entries.
-            If you reset your password, you’ll keep your account, but your old encrypted entries will be inaccessible.
+            Because entries are encrypted using your password, "reset password" can't decrypt old entries.
+            If you reset your password, you'll keep your account, but your old encrypted entries will be inaccessible.
           </div>
         </div>
 
@@ -1210,7 +1243,7 @@ $("authForm").addEventListener("submit", async (e) => {
     if(passHash !== u.passHash || pinHash !== u.pinHash){
       u.failed = (u.failed || 0) + 1;
       if(u.failed >= 5){
-        u.lockUntil = Date.now() + 60_000; // 1 minute lock after 5 attempts
+        u.lockUntil = Date.now() + 60000; // 1 minute lock after 5 attempts
         u.failed = 0;
       }
       users[idx] = u;
@@ -1271,14 +1304,29 @@ function closeDrawer(){
   $("sidebar").classList.remove("open");
   $("drawerBackdrop").classList.remove("show");
 }
+
+let originalShowView = null;
+
 function showView(v){
-  ["home","diary","stats","settings"].forEach(id => $("view-"+id).classList.add("hidden"));
-  $("view-"+v).classList.remove("hidden");
+  ["home","diary","stats","settings","friends"].forEach(id => {
+    const el = $("view-"+id);
+    if(el) el.classList.add("hidden");
+  });
+  const targetView = $("view-"+v);
+  if(targetView) targetView.classList.remove("hidden");
+  
   document.querySelectorAll(".nav a").forEach(a => a.classList.remove("active"));
-  $("nav-"+v).classList.add("active");
+  const navItem = $("nav-"+v);
+  if(navItem) navItem.classList.add("active");
+  
   if(window.innerWidth <= 820) closeDrawer();
 
   if(v === "stats") updateStats();
+  if(v === "friends") {
+    if(window.checkIncomingRequests) window.checkIncomingRequests();
+    if(window.renderFriendsList) window.renderFriendsList();
+    if(window.renderSharedInbox) window.renderSharedInbox();
+  }
 }
 
 /* ---------- Current user ---------- */
@@ -1322,7 +1370,7 @@ let pinHidden = true;
 
 function togglePinVisibility(){
   const me = getUser();
-  console.log("Current User Data:", me); // Check F12 Console to see if 'pin' or 'password' exists here
+  console.log("Current User Data:", me);
   
   if(!me) {
     toast("danger", "Error", "Could not find user data.");
@@ -1331,15 +1379,13 @@ function togglePinVisibility(){
 
   pinHidden = !pinHidden;
 
-  // FIX: Look for 'pin' or 'password' inside the 'me' object
-  const actualPin = me.pin || me.password || me.pass || "N/A";
+  const actualPin = "••••••"; // PIN is hashed for security, cannot display
 
-  // Update UI
   $("pinText").innerText = pinHidden ? "••••••" : actualPin;
   $("pinToggle").className = pinHidden ? "fas fa-eye" : "fas fa-eye-slash";
 
   if(!pinHidden){
-    toast("warn", "Security Warning", "Your PIN is now visible.");
+    toast("warn", "Security Warning", "PIN is stored hashed and cannot be displayed for security.");
   }
 }
 
@@ -1452,7 +1498,7 @@ function loadEntryImage(e){
   const file = e.target.files && e.target.files[0];
   if(!file) return;
 
-  if(file.size > 1_000_000){
+  if(file.size > 1000000){
     e.target.value = "";
     return toast("warn","Image too large","Choose an image under ~1MB.");
   }
@@ -1688,7 +1734,7 @@ function hexToRgba(hex, a){
 function uploadPhoto(e){
   const file = e.target.files && e.target.files[0];
   if(!file) return;
-  if(file.size > 2_000_000){
+  if(file.size > 2000000){
     e.target.value = "";
     return toast("warn","Too large","Please choose an image under 2MB.");
   }
@@ -1840,7 +1886,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-window.renderSharedInbox = function() {
+function renderSharedInbox() {
     const currentUser = readCurrent();
     if (!currentUser) return;
 
@@ -1861,48 +1907,20 @@ window.renderSharedInbox = function() {
     container.innerHTML = myInbox.map(post => `
         <div class="card" style="background: rgba(255,255,255,0.05); margin-bottom: 10px; border-left: 3px solid var(--primary);">
             <div style="display:flex; justify-content:space-between;">
-                <small>From: <b>${post.from}</b></small>
+                <small>From: <b>${escapeHtml(post.from)}</b></small>
                 <small class="muted">${new Date(post.sharedAt).toLocaleDateString()}</small>
             </div>
-            <h4 style="margin: 8px 0;">${post.title}</h4>
-            <p style="font-size: 0.9rem;">${post.body}</p>
+            <h4 style="margin: 8px 0;">${escapeHtml(post.title)}</h4>
+            <p style="font-size: 0.9rem;">${escapeHtml(post.body)}</p>
             ${post.image ? `<img src="${post.image}" style="width:100px; border-radius:5px; margin-top:5px;"/>` : ''}
         </div>
     `).join('');
-};
+}
 
 /* ------------ FRIENDS SYSTEM (GLOBAL) -----------*/
 
-// 1. Navigation & View Switcher
-window.showView = function(tab) {
-    const views = ['home', 'diary', 'stats', 'settings', 'friends']; 
-    views.forEach(v => {
-        const el = $( 'view-' + v);
-        const nav = $( 'nav-' + v); 
-        if(el) el.classList.add('hidden');
-        if(nav) nav.classList.remove('active');
-    });
-
-    const targetView = $('view-' + tab);
-    const targetNav = $('nav-' + tab);
-    if(targetView) targetView.classList.remove('hidden');
-    if(targetNav) targetNav.classList.add('active');
-
-    if(window.innerWidth <= 820) closeDrawer();
-
-    if (tab === 'friends') {
-        window.checkIncomingRequests(); 
-        window.renderFriendsList();
-    }
-    if (tab === "stats") updateStats();
-    if (tab === 'friends') {
-        // This forces the box to check for new messages every time you click "Friends"
-        if (window.renderSharedInbox) window.renderSharedInbox();
-    }
-};
-
 // 2. Action: Send Friend Request
-window.addFriendAction = function() {
+function addFriendAction() {
     const emailInput = $("friendEmail");
     const targetEmail = emailInput.value.trim().toLowerCase();
     const currentUser = readCurrent();
@@ -1910,24 +1928,26 @@ window.addFriendAction = function() {
 
     if (!targetEmail) return toast("danger", "Error", "Please enter an email.");
     if (targetEmail === currentUser.email.toLowerCase()) return toast("danger", "Error", "You cannot add yourself.");
-
-    const foundUser = allUsers.find(u => u.email.toLowerCase() === targetEmail);
-    if (!foundUser) return toast("danger", "Not Found", "User does not exist.");
+    if (!allUsers.find(u => u.email.toLowerCase() === targetEmail)) return toast("danger", "Not Found", "User does not exist.");
 
     let requests = JSON.parse(localStorage.getItem('journal_ultra_requests')) || [];
-    if (requests.find(r => r.from === currentUser.email && r.to === targetEmail)) {
-        return toast("warn", "Pending", "Request already sent.");
+    
+    // Check if request already exists
+    const existingRequest = requests.find(r => r.from === currentUser.email && r.to === targetEmail);
+    if (existingRequest) {
+        if (existingRequest.status === 'pending') return toast("warn", "Pending", "Request already sent.");
+        if (existingRequest.status === 'accepted') return toast("warn", "Already Friends", "You are already friends with this user.");
     }
 
     requests.push({ from: currentUser.email, to: targetEmail, status: 'pending', timestamp: Date.now() });
     localStorage.setItem('journal_ultra_requests', JSON.stringify(requests));
     
-    toast("success", "Success", "Request sent to " + (foundUser.name || targetEmail));
+    toast("success", "Success", "Request sent to " + targetEmail);
     emailInput.value = "";
-};
+}
 
 // 3. UI: Render Pending Requests
-window.checkIncomingRequests = function() {
+function checkIncomingRequests() {
     const currentUser = readCurrent();
     if (!currentUser) return;
     const allRequests = JSON.parse(localStorage.getItem('journal_ultra_requests')) || [];
@@ -1945,33 +1965,37 @@ window.checkIncomingRequests = function() {
     container.innerHTML = myIncoming.map(req => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;">
             <span><strong>${escapeHtml(req.from)}</strong></span>
-            <button class="btn-inline" onclick="acceptFriend('${req.from}')"><i class="fas fa-check"></i> Accept</button>
+            <button class="btn-inline" onclick="acceptFriend('${escapeHtml(req.from)}')"><i class="fas fa-check"></i> Accept</button>
         </div>
     `).join('');
-};
+}
 
 // 4. Action: Accept Friend
-window.acceptFriend = function(senderEmail) {
+function acceptFriend(senderEmail) {
     let allRequests = JSON.parse(localStorage.getItem('journal_ultra_requests')) || [];
     const currentUser = readCurrent();
 
     allRequests = allRequests.map(req => {
-        if (req.from === senderEmail && req.to === currentUser.email) return { ...req, status: 'accepted' };
+        if (req.from === senderEmail && req.to === currentUser.email && req.status === 'pending') {
+            return { ...req, status: 'accepted' };
+        }
         return req;
     });
 
     localStorage.setItem('journal_ultra_requests', JSON.stringify(allRequests));
     toast("success", "Accepted", "You are now friends!");
-    window.checkIncomingRequests();
-    window.renderFriendsList(); 
-};
+    checkIncomingRequests();
+    renderFriendsList(); 
+}
 
 // 5. UI: Render Confirmed Friends
-window.renderFriendsList = function() {
+function renderFriendsList() {
     const currentUser = readCurrent();
+    if (!currentUser) return;
+    
     const allRequests = JSON.parse(localStorage.getItem('journal_ultra_requests')) || [];
     const listContainer = $("confirmedFriendsList");
-    if (!listContainer || !currentUser) return;
+    if (!listContainer) return;
 
     const myFriends = allRequests.filter(req => {
         return req.status === 'accepted' && 
@@ -1984,63 +2008,69 @@ window.renderFriendsList = function() {
         return;
     }
 
+    const allUsers = readUsers();
     listContainer.innerHTML = myFriends.map(req => {
         const friendEmail = req.from.toLowerCase() === currentUser.email.toLowerCase() ? req.to : req.from;
+        const friendData = allUsers.find(u => u.email.toLowerCase() === friendEmail.toLowerCase());
+        const friendName = friendData ? friendData.name : friendEmail;
+        
         return `
             <div style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid var(--border);">
-                <div style="width: 35px; height: 35px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                    ${friendEmail.charAt(0).toUpperCase()}
+                <img src="${friendData?.photo || `https://ui-avatars.com/api/?background=10b981&color=fff&name=${friendEmail.charAt(0)}`}" 
+                     style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                <div>
+                    <div style="font-weight: 500;">${escapeHtml(friendName)}</div>
+                    <div class="muted" style="font-size: 0.8rem;">${escapeHtml(friendEmail)}</div>
                 </div>
-                <div style="font-weight: 500;">${escapeHtml(friendEmail)}</div>
             </div>
         `;
     }).join('');
-};
-
-async function shareWithFriend(postId) {
-    const friendEmail = prompt("Enter friend's email:");
-    if (!friendEmail) return;
-
-    const vault = await openVault();
-    const entry = vault.posts.find(p => p.id === postId);
-
-    const sharedEntry = {
-        from: getUser().email,
-        to: friendEmail.toLowerCase(),
-        content: entry, // This sends the title, body, and mood
-        timestamp: Date.now()
-    };
-
-    let pool = JSON.parse(localStorage.getItem('journal_ultra_shared')) || [];
-    pool.push(sharedEntry);
-    localStorage.setItem('journal_ultra_shared', JSON.stringify(pool));
-    toast("success", "Sent!", "Entry shared with " + friendEmail);
 }
 
 async function shareToFriend(postId) {
-    const friendEmail = prompt("Enter the friend's email to share this entry:");
-    if (!friendEmail) return;
-
     const vault = await openVault();
     const entry = vault.posts.find(p => p.id === postId);
-    if (!entry) return toast("danger", "Error", "Entry not found.");
-
+    
+    if (!entry) {
+        return toast("danger", "Error", "Entry not found.");
+    }
+    
+    const friendEmail = prompt(`Share "${entry.title || 'Untitled'}" with which friend? (Enter their email)`);
+    if (!friendEmail) return;
+    
+    const currentUser = readCurrent();
+    if (!currentUser) return toast("danger", "Error", "Not logged in.");
+    
+    // Verify friend relationship
+    const requests = JSON.parse(localStorage.getItem('journal_ultra_requests')) || [];
+    const isFriend = requests.some(req => 
+        req.status === 'accepted' && 
+        ((req.from === currentUser.email && req.to === friendEmail) ||
+         (req.to === currentUser.email && req.from === friendEmail))
+    );
+    
+    if (!isFriend) {
+        return toast("warn", "Not Friends", `You're not friends with ${friendEmail}. Add them first.`);
+    }
+    
+    // Share the entry
     const sharedData = {
-        from: readCurrent().email,
+        from: currentUser.email,
         to: friendEmail.toLowerCase().trim(),
         title: entry.title,
         body: entry.body,
         mood: entry.mood,
         date: entry.date,
+        tags: entry.tags,
         image: entry.image,
         sharedAt: new Date().toISOString()
     };
-
+    
     let sharedPool = JSON.parse(localStorage.getItem('journal_ultra_shared_posts')) || [];
     sharedPool.push(sharedData);
     localStorage.setItem('journal_ultra_shared_posts', JSON.stringify(sharedPool));
-
-    toast("success", "Shared!", `Entry "${entry.title}" sent to ${friendEmail}`);
+    
+    toast("success", "Shared!", `"${entry.title}" sent to ${friendEmail}`);
 }
 
 /* ---------- Boot ---------- */
@@ -2054,137 +2084,8 @@ window.addEventListener("load", async () => {
         toast("warn","Session found","Enter password + PIN to unlock.");
     }
 
-if (window.checkIncomingRequests) window.checkIncomingRequests();
-  });
-
-async function shareToFriend(postId) {
-    const friendEmail = prompt("Enter the friend's email (e.g., example@gmail.com):");
-    if (!friendEmail) return;
-
-    // 1. Get the entry from your encrypted vault
-    const vault = await openVault();
-    const entry = vault.posts.find(p => p.id === postId);
-    if (!entry) return toast("danger", "Error", "Entry not found.");
-
-    // 2. Create the shared data package
-    const sharedData = {
-        from: getUser().email,
-        to: friendEmail.toLowerCase().trim(),
-        title: entry.title,
-        body: entry.body,
-        mood: entry.mood,
-        date: entry.date,
-        tags: entry.tags,
-        image: entry.image, // Includes the image if one exists
-        timestamp: Date.now()
-    };
-
-    // 3. Save to a separate shared storage pool
-    let sharedPool = JSON.parse(localStorage.getItem('journal_ultra_shared_posts')) || [];
-    sharedPool.push(sharedData);
-    localStorage.setItem('journal_ultra_shared_posts', JSON.stringify(sharedPool));
-
-    toast("success", "Shared!", "Entry sent to " + friendEmail);
-}
-
-app.post('/api/friends/request', auth, (req, res) => {
-  const { email } = req.body;
-  const target = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
-
-  if(!target) return res.status(404).json({ error: 'User not found' });
-  if(target.id === req.user.id) return res.status(400).json({ error: 'Cannot add yourself' });
-
-  db.prepare(`
-    INSERT INTO friend_requests (from_user, to_user)
-    VALUES (?, ?)
-  `).run(req.user.id, target.id);
-
-  res.json({ ok: true });
+    if(window.checkIncomingRequests) window.checkIncomingRequests();
 });
-
-app.post('/api/friends/accept', auth, (req, res) => {
-  const { requestId } = req.body;
-
-  const reqRow = db.prepare('SELECT * FROM friend_requests WHERE id = ?').get(requestId);
-  if(!reqRow) return res.status(404).json({ error: 'Request not found' });
-
-  db.prepare('UPDATE friend_requests SET status = ? WHERE id = ?')
-    .run('accepted', requestId);
-
-  db.prepare('INSERT INTO friends (user_id, friend_id) VALUES (?, ?)')
-    .run(reqRow.from_user, reqRow.to_user);
-
-  db.prepare('INSERT INTO friends (user_id, friend_id) VALUES (?, ?)')
-    .run(reqRow.to_user, reqRow.from_user);
-
-  res.json({ ok: true });
-});
-
-app.get('/api/friends', auth, (req, res) => {
-  const rows = db.prepare(`
-    SELECT u.id, u.name, u.email
-    FROM friends f
-    JOIN users u ON u.id = f.friend_id
-    WHERE f.user_id = ?
-  `).all(req.user.id);
-
-  res.json({ friends: rows });
-});
-
-app.get('/api/friends/requests', auth, (req, res) => {
-  const rows = db.prepare(`
-    SELECT fr.id, u.name, u.email
-    FROM friend_requests fr
-    JOIN users u ON u.id = fr.from_user
-    WHERE fr.to_user = ? AND fr.status = 'pending'
-  `).all(req.user.id);
-
-  res.json({ requests: rows });
-});
-
-async function addFriend(){
-  const email = prompt("Enter friend's email:");
-  if(!email) return;
-
-  try{
-    await api('/friends/request', {
-      method:'POST',
-      body: JSON.stringify({ email })
-    });
-    toast('', 'Sent', 'Friend request sent!');
-  }catch(err){
-    toast('danger','Error', err.message);
-  }
-}
-
-async function loadFriends(){
-  const out = await api('/friends');
-  const list = out.friends;
-
-  $("friendsList").innerHTML = list.map(f => `
-    <div class="card">${f.name} (${f.email})</div>
-  `).join('');
-}
-
-async function loadRequests(){
-  const out = await api('/friends/requests');
-
-  $("requestsList").innerHTML = out.requests.map(r => `
-    <div class="card">
-      ${r.name}
-      <button onclick="acceptReq(${r.id})">Accept</button>
-    </div>
-  `).join('');
-}
-
-async function acceptReq(id){
-  await api('/friends/accept', {
-    method:'POST',
-    body: JSON.stringify({ requestId:id })
-  });
-  loadRequests();
-  loadFriends();
-}
 
 </script>
 <script src="app.js"></script>
