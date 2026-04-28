@@ -14,22 +14,12 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, "public")));
 
-// MongoDB Connection with better error handling
-const MONGO_URL = process.env.MONGO_URL;
-if (!MONGO_URL) {
-  console.error("❌ MONGO_URL environment variable is not set!");
-  process.exit(1);
-}
+// MongoDB Connection
+const MONGO_URL = process.env.MONGO_URL || "mongodb+srv://Archie:Archie1225@cluster0.7e4s845.mongodb.net/myjournal?retryWrites=true&w=majority";
 
-mongoose.connect(MONGO_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("✅ MongoDB Connected"))
-.catch(err => {
-  console.error("❌ MongoDB connection error:", err.message);
-  process.exit(1);
-});
+mongoose.connect(MONGO_URL)
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => console.error("❌ MongoDB connection error:", err));
 
 // ==================== SCHEMAS ====================
 
@@ -47,12 +37,12 @@ const userSchema = new mongoose.Schema({
 
 const journalSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  title: String,
-  body: String,
-  mood: String,
-  tags: [String],
-  date: String,
-  image: String,
+  title: { type: String, default: "" },
+  body: { type: String, default: "" },
+  mood: { type: String, default: "😐 Neutral" },
+  tags: [{ type: String }],
+  date: { type: String, required: true },
+  image: { type: String, default: null },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -139,7 +129,8 @@ app.post("/api/signup", async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        photo: user.photo
+        photo: user.photo,
+        onlineStatus: user.onlineStatus
       }
     });
   } catch (err) {
@@ -191,28 +182,117 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+// ==================== JOURNAL ROUTES ====================
+
+app.post("/api/journal/create", authenticateToken, async (req, res) => {
+  try {
+    const { title, mood, date, tags, body, image } = req.body;
+    
+    const journal = new Journal({
+      userId: req.userId,
+      title: title || "",
+      body: body || "",
+      mood: mood || "😐 Neutral",
+      tags: tags || [],
+      date: date || new Date().toISOString().slice(0, 10),
+      image: image || null
+    });
+    
+    await journal.save();
+    res.json({ success: true, entry: journal });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/journal/list", authenticateToken, async (req, res) => {
+  try {
+    const entries = await Journal.find({ userId: req.userId }).sort({ date: -1, createdAt: -1 });
+    res.json({ success: true, entries });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/journal/get/:id", authenticateToken, async (req, res) => {
+  try {
+    const entry = await Journal.findOne({ _id: req.params.id, userId: req.userId });
+    if (!entry) {
+      return res.status(404).json({ error: "Entry not found" });
+    }
+    res.json({ success: true, entry });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/api/journal/update/:id", authenticateToken, async (req, res) => {
+  try {
+    const { title, mood, date, tags, body, image } = req.body;
+    
+    const entry = await Journal.findOneAndUpdate(
+      { _id: req.params.id, userId: req.userId },
+      {
+        title: title || "",
+        body: body || "",
+        mood: mood || "😐 Neutral",
+        tags: tags || [],
+        date: date || new Date().toISOString().slice(0, 10),
+        image: image || null,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+    
+    if (!entry) {
+      return res.status(404).json({ error: "Entry not found" });
+    }
+    
+    res.json({ success: true, entry });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/journal/delete/:id", authenticateToken, async (req, res) => {
+  try {
+    const entry = await Journal.findOneAndDelete({ _id: req.params.id, userId: req.userId });
+    if (!entry) {
+      return res.status(404).json({ error: "Entry not found" });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ==================== FRIEND ROUTES ====================
 
 app.post("/api/friends/request", authenticateToken, async (req, res) => {
   try {
-    const { fromUserId, toUserEmail } = req.body;
+    const { toUserEmail } = req.body;
     
     const toUser = await User.findOne({ email: toUserEmail });
     if (!toUser) {
       return res.status(404).json({ error: "User not found" });
     }
     
-    if (fromUserId === toUser._id.toString()) {
+    if (toUser._id.toString() === req.userId) {
       return res.status(400).json({ error: "Cannot send friend request to yourself" });
     }
     
-    const fromUser = await User.findById(fromUserId);
+    const fromUser = await User.findById(req.userId);
     if (fromUser.friends.includes(toUser._id)) {
       return res.status(400).json({ error: "Already friends with this user" });
     }
     
     const existingRequest = await FriendRequest.findOne({
-      fromUser: fromUserId,
+      fromUser: req.userId,
       toUser: toUser._id,
       status: "pending"
     });
@@ -222,7 +302,7 @@ app.post("/api/friends/request", authenticateToken, async (req, res) => {
     }
     
     const request = new FriendRequest({
-      fromUser: fromUserId,
+      fromUser: req.userId,
       toUser: toUser._id,
       status: "pending"
     });
@@ -288,23 +368,19 @@ app.post("/api/friends/accept", authenticateToken, async (req, res) => {
 
 app.post("/api/friends/unfriend", authenticateToken, async (req, res) => {
   try {
-    const { userId, friendId } = req.body;
+    const { friendId } = req.body;
     
-    if (userId !== req.userId) {
-      return res.status(403).json({ error: "Not authorized" });
-    }
-    
-    await User.findByIdAndUpdate(userId, {
+    await User.findByIdAndUpdate(req.userId, {
       $pull: { friends: friendId }
     });
     await User.findByIdAndUpdate(friendId, {
-      $pull: { friends: userId }
+      $pull: { friends: req.userId }
     });
     
     await FriendRequest.deleteMany({
       $or: [
-        { fromUser: userId, toUser: friendId, status: "accepted" },
-        { fromUser: friendId, toUser: userId, status: "accepted" }
+        { fromUser: req.userId, toUser: friendId, status: "accepted" },
+        { fromUser: friendId, toUser: req.userId, status: "accepted" }
       ]
     });
     
@@ -357,22 +433,28 @@ app.post("/api/status/update", authenticateToken, async (req, res) => {
 
 app.post("/api/share/entry", authenticateToken, async (req, res) => {
   try {
-    const { toUserEmail, title, body, mood, date, tags, image } = req.body;
+    const { toUserEmail, entryId } = req.body;
     
     const toUser = await User.findOne({ email: toUserEmail });
     if (!toUser) {
       return res.status(404).json({ error: "User not found" });
     }
     
+    const entry = await Journal.findOne({ _id: entryId, userId: req.userId });
+    if (!entry) {
+      return res.status(404).json({ error: "Entry not found" });
+    }
+    
     const sharedEntry = new SharedEntry({
       fromUser: req.userId,
       toUser: toUser._id,
-      title,
-      body,
-      mood,
-      date,
-      tags,
-      image
+      entryId: entry._id,
+      title: entry.title,
+      body: entry.body,
+      mood: entry.mood,
+      date: entry.date,
+      tags: entry.tags,
+      image: entry.image
     });
     
     await sharedEntry.save();
@@ -409,6 +491,32 @@ app.get("/api/shared/inbox", authenticateToken, async (req, res) => {
   }
 });
 
+// ==================== USER PHOTO ROUTE ====================
+
+app.put("/api/user/photo", authenticateToken, async (req, res) => {
+  try {
+    const { photo } = req.body;
+    await User.findByIdAndUpdate(req.userId, { photo });
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/user/delete", authenticateToken, async (req, res) => {
+  try {
+    await Journal.deleteMany({ userId: req.userId });
+    await FriendRequest.deleteMany({ $or: [{ fromUser: req.userId }, { toUser: req.userId }] });
+    await SharedEntry.deleteMany({ $or: [{ fromUser: req.userId }, { toUser: req.userId }] });
+    await User.findByIdAndDelete(req.userId);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ==================== HEALTH CHECK ====================
 
 app.get("/health", (req, res) => {
@@ -421,13 +529,6 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: "Something went wrong!" });
-});
-
-// Start server
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📱 Open http://localhost:${PORT}`);
