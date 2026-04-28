@@ -5,14 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Life Journal</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="stylesheet" href="styles.css">
   <style>
     :root{
       --primary:#10b981;
       --primary2:#0ea5e9;
       --danger:#ef4444;
       --warn:#f59e0b;
-
       --bg:#f1f5f9;
       --card:#ffffff;
       --sidebar:#0f172a;
@@ -35,14 +33,11 @@
       --shadow2: 0 18px 45px rgba(0,0,0,.45);
       --ring: rgba(61, 233, 27, 0.28);
     }
-
     *{ box-sizing:border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; padding:0;}
     body{ background:var(--bg); color:var(--text); min-height:100vh; }
     button,a,input,textarea,select{ transition:.18s ease; }
     a{ color: inherit; }
     .hidden{ display:none !important; }
-
-    /* Toast */
     .toast-wrap{ position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:10px; z-index:99999; pointer-events:none;}
     .toast{
       pointer-events:auto;
@@ -61,24 +56,18 @@
     .toast .t-title{ font-weight:900; margin-bottom:2px; }
     .toast .t-msg{ color: var(--muted); font-size:.9rem; line-height:1.25; }
     .toast .x{ margin-left:auto; border:none; background:transparent; cursor:pointer; color: var(--muted); padding:4px 6px; border-radius:10px; }
-    .toast.x:hover{ background: color-mix(in oklab, var(--border) 22%, transparent); color: var(--text);}
     .toast.danger{ border-left-color: var(--danger); }
     .toast.danger i{ color: var(--danger); }
     .toast.warn{ border-left-color: var(--warn); }
     .toast.warn i{ color: var(--warn); }
     @keyframes pop{ from{ transform:translateY(6px); opacity:.2;} to{ transform:translateY(0); opacity:1;} }
-
-    /* Auth */
     .auth{
       display:flex; justify-content:center; align-items:center;
       min-height:100vh;
-      background:
-        radial-gradient(1200px 700px at 30% 20%, rgba(16,185,129,.25), transparent 55%),
-        radial-gradient(1000px 700px at 70% 30%, rgba(14,165,233,.18), transparent 55%),
-        var(--sidebar);
+      background: radial-gradient(1200px 700px at 30% 20%, rgba(16,185,129,.25), transparent 55%),
+                  radial-gradient(1000px 700px at 70% 30%, rgba(14,165,233,.18), transparent 55%),
+                  var(--sidebar);
       padding:24px;
-      position:relative;
-      overflow:hidden;
     }
     .auth-card{
       width:100%; max-width: 440px;
@@ -93,25 +82,22 @@
       background: color-mix(in oklab, var(--card) 88%, transparent);
       border: 1px solid rgba(148,163,184,.14);
     }
-    .brand{ display:flex; align-items:center; gap:10px; justify-content:center; user-select:none;}
-    .brand i{ color: var(--primary); filter: drop-shadow(0 10px 18px rgba(16,185,129,.35)); }
-    .brand h1{ font-size: 1.55rem; letter-spacing:.3px; }
-    .subhead{ text-align:center; margin-top:6px; color: rgba(255,255,255,.8); }
-    .auth-toprow{ display:flex; justify-content:space-between; gap:10px; align-items:center; margin-top:12px;}
+    .brand{ display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:10px; }
+    .brand i{ color: var(--primary); font-size: 2rem; }
+    .brand h1{ font-size: 1.55rem; }
     .pillbtn{
       border:none; cursor:pointer; border-radius:999px; padding:10px 12px;
       background: rgba(255,255,255,.14); color: rgba(255,255,255,.9);
       font-weight:800;
     }
-    .pillbtn:hover{ background: rgba(255,255,255,.2); transform: translateY(-1px); }
     .tab-switch{ display:flex; background: #eef2f7; padding:6px; border-radius:14px; margin: 14px 0 10px; gap:6px; }
     [data-theme="dark"] .tab-switch{ background: rgba(148,163,184,.14); }
     .tab-switch button{ flex:1; border:none; background:transparent; padding:12px; border-radius:12px; cursor:pointer; font-weight:900; color: var(--muted); }
     .tab-switch button.active{ background: var(--card); color: var(--primary); box-shadow: 0 2px 10px rgba(2,6,23,.10); }
     .field{ margin-top:10px; text-align:left; }
-    .label{ font-size: .82rem; color: var(--muted); margin: 0 0 6px 2px; }
+    .label{ font-size: .82rem; color: var(--muted); margin: 0 0 6px 2px; font-weight:600; }
     .input{
-      width:100%; padding: 14px 14px;
+      width:100%; padding: 12px 14px;
       border-radius:14px;
       border: 1px solid var(--border);
       outline:none;
@@ -119,42 +105,31 @@
       color: var(--text);
       font-size: 1rem;
     }
-    .input:focus{ border-color: rgba(16,185,129,.55); box-shadow: 0 0 0 4px var(--ring); }
-    .row{ display:flex; gap:10px; }
-    .row .field{ flex:1; }
+    .input:focus{ border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring); }
     .btn{
       width:100%;
       margin-top:12px;
-      padding:14px 14px;
+      padding:14px;
       border:none; border-radius:14px;
       font-weight:900; cursor:pointer; color:white;
       background: linear-gradient(135deg, var(--primary), #22c55e);
-      box-shadow: 0 14px 24px rgba(16,185,129,.25);
+      box-shadow: 0 4px 12px rgba(16,185,129,.25);
     }
     .btn:hover{ transform: translateY(-1px); filter: brightness(1.02); }
-    .btn:active{ transform: translateY(0px); filter: brightness(.98); }
-    .btn2{
-      background: linear-gradient(135deg, var(--primary2), #38bdf8);
-      box-shadow: 0 14px 24px rgba(14,165,233,.22);
-    }
-    .hint{ text-align:center; color: var(--muted); font-size: .9rem; margin-top:12px; }
-    .link{ color: var(--primary); font-weight: 900; cursor:pointer; text-decoration: underline; text-underline-offset: 3px; }
     .captcha{
       display:flex; align-items:center; justify-content:space-between; gap:10px;
       background: color-mix(in oklab, var(--card) 90%, transparent);
       border:1px solid var(--border);
-      border-radius:14px; padding: 12px 12px; margin-top:10px;
+      border-radius:14px; padding: 12px; margin-top:10px;
     }
-    .captcha-code{ font-weight: 950; letter-spacing: 5px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; user-select:none;}
+    .captcha-code{ font-weight: 950; letter-spacing: 5px; font-family: monospace; font-size: 1.2rem; }
     .captcha button{
       border:none; cursor:pointer; font-weight: 900;
       background: color-mix(in oklab, var(--primary) 16%, transparent);
       color: var(--primary);
-      padding: 10px 12px; border-radius: 12px;
+      padding: 8px 16px; border-radius: 12px;
     }
-    .captcha button:hover{ background: color-mix(in oklab, var(--primary) 22%, transparent); }
-
-    /* App */
+    .link{ color: var(--primary); font-weight: 900; cursor:pointer; text-decoration: underline; }
     #app{ display:none; height:100vh; overflow:hidden;}
     .layout{ display:flex; height:100vh; }
     .sidebar{
@@ -169,15 +144,14 @@
       color: var(--primary);
       font-weight: 950;
       font-size: 1.1rem;
-      padding: 10px 10px;
+      padding: 10px;
       border-radius: 14px;
       cursor:pointer;
-      user-select:none;
     }
-    .sidebar-logo:hover{ background: rgba(255,255,255,.06); transform: translateY(-1px); }
+    .sidebar-logo:hover{ background: rgba(255,255,255,.06); }
     .nav a{
       display:flex; align-items:center; gap:12px;
-      padding: 12px 12px;
+      padding: 12px;
       border-radius: 14px;
       color: #94a3b8;
       text-decoration:none;
@@ -186,47 +160,20 @@
     }
     .nav a:hover{ background: rgba(255,255,255,.06); color: #e2e8f0; }
     .nav a.active{ background: rgba(255,255,255,.10); color:white; }
-    .badge{
-      margin-left:auto;
-      background: var(--danger);
-      color:white;
-      padding: 2px 9px;
-      border-radius: 999px;
-      font-size:.72rem;
-      font-weight: 950;
-    }
     .spacer{ flex:1; }
-    .logout{
-      color: #fecaca !important;
-      background: rgba(239,68,68,.10);
-    }
-    .logout:hover{ background: rgba(239,68,68,.16) !important; color: white !important; }
+    .logout{ color: #fecaca !important; }
     .main{ flex:1; padding: 26px; overflow-y:auto; }
-    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 16px; }
-    .hamburger{
-      display:none;
-      border:none; cursor:pointer;
-      background: var(--card);
-      border: 1px solid var(--border);
-      padding: 10px 12px;
-      border-radius: 14px;
-      box-shadow: var(--shadow);
-      color: var(--text);
-      font-weight: 900;
-    }
-    .hamburger:hover{ transform: translateY(-1px); }
+    .topbar{ display:flex; align-items:center; gap:12px; margin-bottom: 16px; flex-wrap:wrap; }
+    .hamburger{ display:none; border:none; cursor:pointer; background: var(--card); border: 1px solid var(--border); padding: 10px 12px; border-radius: 14px; color: var(--text); }
     .pill{
       display:flex; align-items:center; gap:10px;
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 999px;
-      padding: 10px 12px;
-      box-shadow: var(--shadow);
+      padding: 8px 12px;
     }
-    .pill img{ width: 34px; height: 34px; border-radius: 999px; object-fit: cover; border: 2px solid rgba(16,185,129,.35); }
+    .pill img{ width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
     .pill .name{ font-weight: 950; }
-    .pill .sub{ font-size:.8rem; color: var(--muted); }
-
     .card{
       background: var(--card);
       border: 1px solid var(--border);
@@ -235,67 +182,49 @@
       box-shadow: var(--shadow);
       margin-bottom: 12px;
     }
-    .card h3{ margin-bottom: 8px; }
-    .grid{ display:grid; grid-template-columns: 1.35fr .65fr; gap: 12px; }
+    .card h3{ margin-bottom: 12px; }
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .btn-inline{
-      width:auto; padding: 10px 14px;
+      padding: 10px 20px;
       border-radius: 14px; border:none; cursor:pointer;
       font-weight: 950; color: white;
       background: linear-gradient(135deg, var(--primary), #22c55e);
     }
-    .btn-inline:hover{ transform: translateY(-1px); }
     .btn-ghost{
-      width:auto; padding: 10px 14px;
+      padding: 10px 20px;
       border-radius: 14px; border: 1px solid var(--border);
       cursor:pointer; font-weight: 950;
       background: var(--card); color: var(--text);
     }
-    .btn-danger{ background: linear-gradient(135deg, var(--danger), #fb7185); }
-
-    textarea.input{ min-height: 90px; resize: vertical; }
-    .notice{ background: color-mix(in oklab, var(--primary) 10%, var(--card)); border: 1px solid color-mix(in oklab, var(--primary) 30%, var(--border)); }
-    .empty{ text-align:center; color: var(--muted); padding: 16px 10px; }
-
-    /* Entry cards */
+    .row{ display:flex; gap:12px; }
+    .row .field{ flex:1; }
     .entry{ display:flex; justify-content:space-between; gap:14px; align-items:flex-start; }
-    .entry small{ color: var(--muted); display:block; margin-bottom: 6px; }
+    .entry small{ color: var(--muted); display:block; margin-bottom: 6px; font-size:0.8rem; }
     .entry p{ line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
     .entry h4{ font-size: 1.05rem; margin-bottom: 6px; }
     .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top: 10px;}
     .chip{
-      display:inline-flex; align-items:center; gap:8px;
+      display:inline-flex; align-items:center; gap:6px;
       background: color-mix(in oklab, var(--border) 18%, transparent);
       border: 1px solid color-mix(in oklab, var(--border) 30%, transparent);
       color: var(--muted);
       font-size: .78rem;
-      font-weight: 850;
-      padding: 6px 10px;
+      padding: 4px 10px;
       border-radius: 999px;
     }
-    .chip b{ color: var(--text); }
-    .entry-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+    .entry-actions{ display:flex; gap:8px; }
     .iconbtn{
       border:none; cursor:pointer;
       background: color-mix(in oklab, var(--border) 16%, transparent);
-      border: 1px solid color-mix(in oklab, var(--border) 30%, transparent);
-      padding: 9px 10px;
+      padding: 8px 12px;
       border-radius: 12px;
       color: var(--text);
     }
-    .iconbtn:hover{ transform: translateY(-1px); }
-    .iconbtn.danger{ color: var(--danger); }
-    .thumb{
-      width: 96px; height: 72px; border-radius: 14px;
-      border: 1px solid var(--border);
-      object-fit: cover;
-      margin-top: 8px;
-      box-shadow: var(--shadow);
-    }
-
-    /* Modal */
+    .iconbtn:hover{ transform: translateY(-1px); background: color-mix(in oklab, var(--border) 30%, transparent); }
+    .thumb{ width: 96px; height: 72px; border-radius: 14px; object-fit: cover; margin-top: 8px; }
     .modal-backdrop{
       position: fixed; inset:0;
-      background: rgba(2,6,23,.62);
+      background: rgba(2,6,23,.75);
       display:none;
       align-items:center; justify-content:center;
       padding: 18px;
@@ -303,937 +232,238 @@
     }
     .modal{
       width: 100%;
-      max-width: 720px;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
       background: var(--card);
-      border: 1px solid var(--border);
       border-radius: 22px;
       box-shadow: var(--shadow2);
-      overflow:hidden;
     }
     .modal-head{
       display:flex; justify-content:space-between; align-items:center;
-      padding: 14px 16px;
+      padding: 16px 20px;
       border-bottom: 1px solid var(--border);
-      background: color-mix(in oklab, var(--card) 90%, transparent);
     }
-    .modal-head h3{ margin:0; }
-    .modal-body{ padding: 16px; }
-    .modal-foot{ padding: 14px 16px; display:flex; gap:10px; justify-content:flex-end; border-top: 1px solid var(--border); }
-
-    /* Drawer */
-    .drawer-backdrop{ display:none; position:fixed; inset:0; background: rgba(2,6,23,.55); z-index: 999; }
-    @media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
-    @media (max-width: 820px){
-      .sidebar{
-        position: fixed; top:0; left:0;
-        height: 100vh; transform: translateX(-105%);
-        z-index: 1000; width: 290px; box-shadow: var(--shadow2);
-      }
-      .sidebar.open{ transform: translateX(0); }
-      .drawer-backdrop.show{ display:block; }
-      .hamburger{ display:inline-flex; align-items:center; gap:10px; }
-    }
-
-    /* Markdown-ish preview */
+    .modal-body{ padding: 20px; }
+    .modal-foot{ padding: 16px 20px; display:flex; gap:10px; justify-content:flex-end; border-top: 1px solid var(--border); }
     .preview{
-      border: 1px dashed color-mix(in oklab, var(--border) 60%, transparent);
+      border: 1px dashed var(--border);
       padding: 12px;
       border-radius: 16px;
       background: color-mix(in oklab, var(--border) 10%, transparent);
-      color: var(--text);
-      line-height: 1.6;
+      min-height: 150px;
     }
-    .preview h1,.preview h2,.preview h3{ margin: 10px 0 6px; }
-    .preview code{ background: color-mix(in oklab, var(--border) 16%, transparent); padding:2px 6px; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .preview blockquote{ margin: 10px 0; padding: 8px 12px; border-left: 4px solid var(--primary); background: color-mix(in oklab, var(--primary) 10%, transparent); border-radius: 10px; color: var(--muted); }
-    .kpi{ display:flex; gap:10px; flex-wrap:wrap; }
-    .kpi .k{ flex:1; min-width: 180px; }
-    .k .big{ font-size: 1.6rem; font-weight: 950; }
-    .k .small{ color: var(--muted); font-size: .9rem; margin-top: 4px; }
-
-    canvas{ width: 100%; height: 160px; border-radius: 16px; border: 1px solid var(--border); background: color-mix(in oklab, var(--border) 6%, transparent); }
-
+    .button-row-center{ display:flex; justify-content:center; gap:12px; margin-top:12px; }
+    @media (max-width: 768px){
+      .sidebar{
+        position: fixed; top:0; left:0;
+        height: 100vh; transform: translateX(-105%);
+        z-index: 1000; width: 280px;
+      }
+      .sidebar.open{ transform: translateX(0); }
+      .drawer-backdrop{ display:none; position:fixed; inset:0; background: rgba(0,0,0,.5); z-index: 999; }
+      .drawer-backdrop.show{ display:block; }
+      .hamburger{ display:inline-flex; align-items:center; gap:8px; }
+      .grid{ grid-template-columns: 1fr; }
+      .row{ flex-direction: column; }
+    }
+    textarea.input{ min-height: 100px; resize: vertical; }
     .kbd{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: .78rem;
-      padding: 2px 8px;
-      border-radius: 10px;
+      font-family: monospace;
+      padding: 2px 6px;
+      border-radius: 6px;
       border: 1px solid var(--border);
       background: color-mix(in oklab, var(--border) 12%, transparent);
-      color: var(--muted);
-      font-weight: 900;
+      font-size: 0.75rem;
     }
-
-.button-row-center {
-  display: flex;
-  justify-content: center; 
-  align-items: center;
-  gap: 12px;              
-  margin-top: 15px;        
-  width: 100%;
-}
-
-.button-row-center .btn, 
-.button-row-center .btn-inline, 
-.button-row-center .btn-ghost {
-  width: auto;             
-  padding: 10px 20px;      
-}
-
-/*here*/
-/* Variables that change based on data-theme */
-:root {
-    --bg-color: #f4f7f6;
-    --text-color: #1a1a1a;
-}
-
-[data-theme="dark"] {
-    --bg-color: #0f172a;
-    --text-color: #f8fafc;
-}
-
-/* Apply variables to the body */
-body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
-}
-
-:root {
-  --bg: #f4f7f6;
-  --text: #1a1a1a;
-  --card: #ffffff;
-}
-
-[data-theme="dark"] {
-  --bg: #0f172a;
-  --text: #f8fafc;
-  --card: #1e293b;
-}
-
-/* Apply these to your existing classes */
-body { background-color: var(--bg); color: var(--text); }
-.card { background-color: var(--card); }
-
-.iconbtn {
-  padding: 12px;
-  min-width: 44px;
-  min-height: 44px;
-}
-canvas {
-  height: 220px;
-}
-input, textarea, select {
-  font-size: 16px;
-}
-html {
-  scroll-behavior: smooth;
-}
-.team {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  flex-wrap: wrap;
-  margin-top: 30px;
-  justify-content: center;
-  text-align:center;
-  margin-top:12px;
-  display:flex; justify-content:space-between; align-items:center;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in oklab, var(--card) 90%, transparent);
-  width: 100%;
-  max-width: 720px;
-}
-
-.member img {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #22c55e;
-  transition: 0.3s;
-}
-
-.member img:hover {
-  transform: scale(1.1);
-}
-
-.member p {
-  margin-top: 10px;
-}
+    canvas{ width: 100%; height: 200px; border-radius: 16px; }
+    .team{ display:flex; justify-content:center; gap:20px; flex-wrap:wrap; margin-top:20px; text-align:center; }
+    .member img{ width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); }
   </style>
 </head>
-
 <body>
-  <div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
+  <div class="toast-wrap" id="toastWrap"></div>
 
-  <!-- AUTH -->
+  <!-- AUTH SECTION -->
   <section id="authSection" class="auth">
     <div style="position:absolute; top:16px; right:16px; display:flex; gap:10px;">
-      <button class="pillbtn" type="button" onclick="toggleTheme()"><i class="fas fa-moon"></i> Theme</button>
-      <button class="pillbtn" type="button" onclick="openAbout()"><i class="fas fa-circle-info"></i> About</button>
+      <button class="pillbtn" onclick="toggleTheme()"><i class="fas fa-moon"></i> Theme</button>
+      <button class="pillbtn" onclick="openAbout()"><i class="fas fa-info-circle"></i> About</button>
     </div>
-
-    <div class="auth-card" role="dialog" aria-label="Authentication">
+    <div class="auth-card">
       <div class="brand">
         <i class="fas fa-feather"></i>
         <h1>My Life Journal</h1>
       </div>
-      <div class="hint" style="margin-top:6px;">
-        Private journal safe place for everyone<span class="kbd" title="Security note">Journal</span>
+      <div class="tab-switch">
+        <button id="tabLogin" class="active" onclick="toggleMode('login')">Login</button>
+        <button id="tabSignup" onclick="toggleMode('signup')">Sign Up</button>
       </div>
-
-      <div class="tab-switch" role="tablist" aria-label="Login and Sign Up">
-        <button id="tabLogin" class="active" type="button" role="tab" aria-selected="true" onclick="toggleMode('login')">Login</button>
-        <button id="tabSignup" type="button" role="tab" aria-selected="false" onclick="toggleMode('signup')">Sign Up</button>
-      </div>
-
       <div id="loginFormContainer">
         <form id="authForm">
           <div class="field hidden" id="fieldName">
             <div class="label">Full Name</div>
-            <input type="text" id="regName" class="input" placeholder="e.g., Juan Dela Cruz" autocomplete="name">
+            <input type="text" id="regName" class="input" placeholder="Your full name">
           </div>
-
           <div class="field">
-            <div class="label">Email Address</div>
-            <input type="email" id="email" class="input" placeholder="you@example.com" required autocomplete="email">
+            <div class="label">Email</div>
+            <input type="email" id="email" class="input" placeholder="you@example.com" required>
           </div>
-
           <div class="field">
-            <div class="label">Password</div>
-            <input type="password" id="pass" class="input" placeholder="password" required autocomplete="current-password">
+            <div class="label">Password (min 8 chars)</div>
+            <input type="password" id="pass" class="input" placeholder="········" required>
           </div>
-
-          <div class="captcha" aria-label="Captcha">
+          <div class="field">
+            <div class="label">6-Digit PIN</div>
+            <input type="password" id="pin" class="input" placeholder="123456" maxlength="6" required>
+          </div>
+          <div class="captcha">
             <div>
-              <div class="label" style="margin:0 0 6px 0;">Captcha</div>
+              <div class="label">Captcha</div>
               <div class="captcha-code" id="captchaBox">----</div>
             </div>
             <button type="button" onclick="generateCaptcha()"><i class="fas fa-rotate"></i> Refresh</button>
           </div>
-
-          <div class="row">
-            <div class="field">
-              <div class="label">Enter Captcha</div>
-              <input type="text" id="captchaInp" class="input" placeholder="Type captcha" required autocomplete="off">
-            </div>
-            <div class="field">
-              <div class="label">6-Digit PIN</div>
-              <input type="password" id="pin" class="input" placeholder="••••••" maxlength="6" inputmode="numeric" required autocomplete="off">
-            </div>
+          <div class="field">
+            <div class="label">Enter Captcha</div>
+            <input type="text" id="captchaInp" class="input" placeholder="Type the code">
           </div>
-
           <button type="submit" class="btn" id="submitBtn">Login</button>
-
-          <div class="hint">
-            <span class="link" onclick="toggleRecovery(true)">Forgot password or PIN?</span>
-          </div>
-
-          <div class="hint" style="margin-top:8px;">
-            Shortcuts: <span class="kbd">Ctrl</span> + <span class="kbd">K</span> to open Quick Add (after login)
-          </div>
         </form>
-      </div>
-
-      <!-- Recovery -->
-      <div id="recoveryFormContainer" class="hidden">
-        <h2 style="text-align:center; margin: 6px 0 10px;">Account Recovery</h2>
-
-        <div class="card notice" style="padding:12px; margin-top:10px;">
-          <div style="font-weight:950; margin-bottom:4px;">Important</div>
-          <div style="font-size:.9rem; color: var(--muted);">
-            Because entries are encrypted using your password, "reset password" can't decrypt old entries.
-            If you reset your password, you'll keep your account, but your old encrypted entries will be inaccessible.
-          </div>
-        </div>
-
-        <div class="field">
-          <div class="label">Confirm Email</div>
-          <input type="email" id="recoverEmail" class="input" placeholder="you@example.com" autocomplete="email">
-        </div>
-        <div class="field">
-          <div class="label">Confirm Full Name</div>
-          <input type="text" id="recoverNameInput" class="input" placeholder="Exact name used in signup" autocomplete="name">
-        </div>
-
-        <div class="row">
-          <div class="field">
-            <div class="label">New Password</div>
-            <input type="password" id="newPass" class="input" placeholder="New password" autocomplete="new-password">
-          </div>
-          <div class="field">
-            <div class="label">New PIN</div>
-            <input type="password" id="newPin" class="input" placeholder="6 digits" maxlength="6" inputmode="numeric" autocomplete="off">
-          </div>
-        </div>
-
-        <button class="btn btn2" type="button" onclick="handleRecovery()">Reset</button>
-        <div class="hint">
-          <span class="link" onclick="toggleRecovery(false)">Back to login</span>
-        </div>
       </div>
     </div>
   </section>
 
-  <!-- APP -->
+  <!-- APP SECTION -->
   <section id="app">
     <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
-
     <div class="layout">
       <nav class="sidebar" id="sidebar">
         <div class="sidebar-logo" onclick="showView('home')">
-          <i class="fas fa-feather"></i> <span> My Life Journal</span>
+          <i class="fas fa-feather"></i> <span>My Life Journal</span>
         </div>
-
         <div class="nav">
           <a onclick="showView('home')" id="nav-home" class="active"><i class="fas fa-home"></i> Home</a>
           <a onclick="showView('diary')" id="nav-diary"><i class="fas fa-book"></i> Diary</a>
           <a onclick="showView('stats')" id="nav-stats"><i class="fas fa-chart-line"></i> Stats</a>
-          <a onclick="showView('friends')" id="nav-friends"> <i class="fas fa-users"></i> Friends</a>
+          <a onclick="showView('friends')" id="nav-friends"><i class="fas fa-users"></i> Friends</a>
           <a onclick="showView('settings')" id="nav-settings"><i class="fas fa-user-cog"></i> Settings</a>
         </div>
-
         <div class="spacer"></div>
-
-        <a class="nav logout" onclick="logout(true)" style="text-decoration:none;">
-          <i class="fas fa-power-off"></i> Logout
-        </a>
+        <a class="nav logout" onclick="logout()"><i class="fas fa-power-off"></i> Logout</a>
       </nav>
-
       <main class="main">
         <div class="topbar">
-          <button class="hamburger" type="button" onclick="toggleDrawer()">
-            <i class="fas fa-bars"></i> Menu
-          </button>
-
+          <button class="hamburger" onclick="toggleDrawer()"><i class="fas fa-bars"></i> Menu</button>
           <div style="flex:1;"></div>
-
-          <button class="btn-ghost" type="button" onclick="toggleTheme()" title="Toggle theme">
-            <i class="fas fa-circle-half-stroke"></i> Theme
-          </button>
-
-          <button class="btn-ghost" type="button" onclick="openAbout()" title="Toggle about">
-            <i class="fas fa-circle-info"></i> About
-            </button>
-
-          <div class="pill" title="Current user">
+          <button class="btn-ghost" onclick="toggleTheme()"><i class="fas fa-circle-half-stroke"></i> Theme</button>
+          <button class="btn-ghost" onclick="openAbout()"><i class="fas fa-info-circle"></i> About</button>
+          <div class="pill">
             <img id="topAvatar" alt="avatar" src="https://ui-avatars.com/api/?background=10b981&color=fff&name=User">
-            <div>
-              <div class="name" id="userGreet">User</div>
-              <div class="sub" id="userEmailSmall">email</div>
-            </div>
+            <div><div class="name" id="userGreet">User</div><div class="sub" id="userEmailSmall" style="font-size:0.75rem;"></div></div>
           </div>
         </div>
 
-        <!-- HOME -->
+        <!-- HOME VIEW -->
         <section id="view-home">
           <h1>Welcome back 👋</h1>
-
-          <div class="grid" style="margin-top: 14px;">
-            <div class="card" style="border-left: 6px solid var(--primary);">
-              <h3 id="entryCount">0 entries</h3>
-              <div class="muted" style="margin-top:6px;">
-                Your diary is encrypted. Keep your password safe.
-              </div>
-              <div class="chips" style="margin-top:12px;">
-                <span class="chip"><i class="fas fa-key"></i> <b>Encrypted</b> AES‑GCM</span>
-                <span class="chip"><i class="fas fa-bolt"></i> Quick Add <span class="kbd">Ctrl</span>+<span class="kbd">K</span></span>
-                <span class="chip"><i class="fas fa-file-export"></i> Export/Import</span>
-              </div>
-            </div>
-
-            <div class="card">
-              <h3>Backup</h3>
-              <div class="muted" style="margin-bottom:10px;">
-                Export your encrypted backup file (safe to share, but keep your password private).
-              </div>
-              <div class="button-row-center">
-                <button class="btn-inline" onclick="exportData()"><i class="fas fa-download"></i> Export</button>
-                <button class="btn-ghost" onclick="document.getElementById('importFile').click()"><i class="fas fa-upload"></i> Import</button>
-                <input id="importFile" type="file" accept="application/json" class="hidden" onchange="importData(event)">
-              </div>
-            </div>
+          <div class="grid" style="margin-top:14px;">
+            <div class="card"><h3 id="entryCount">0 entries</h3><p class="muted">Your encrypted journal</p><div class="chips" style="margin-top:12px;"><span class="chip"><i class="fas fa-key"></i> AES-GCM</span><span class="chip"><i class="fas fa-bolt"></i> Ctrl+K to add</span></div></div>
+            <div class="card"><h3>Backup</h3><div class="button-row-center"><button class="btn-inline" onclick="exportData()"><i class="fas fa-download"></i> Export</button><button class="btn-ghost" onclick="document.getElementById('importFile').click()"><i class="fas fa-upload"></i> Import</button><input id="importFile" type="file" accept=".json" class="hidden" onchange="importData(event)"></div></div>
           </div>
-
-          <div class="card" style="margin-top:12px;">
-            <h3>Quick Add</h3>
-            <div class="row">
-              <div class="field" style="margin-top:0;">
-                <div class="label">Title</div>
-                <input id="quickTitle" class="input" placeholder="Short title">
-              </div>
-              <div class="field" style="margin-top:0;">
-                <div class="label">Mood</div>
-                <select id="quickMood" class="input">
-                  <option value="🙂 Happy">🙂 Happy</option>
-                  <option value="😌 Calm">😌 Calm</option>
-                  <option value="😤 Stressed">😤 Stressed</option>
-                  <option value="😢 Sad">😢 Sad</option>
-                  <option value="🤩 Excited">🤩 Excited</option>
-                  <option value="😐 Neutral" selected>😐 Neutral</option>
-                </select>
-              </div>
-            </div>
-            <div class="field">
-              <div class="label">Tags (comma separated)</div>
-              <input id="quickTags" class="input" placeholder="e.g., school, family, goals">
-            </div>
-            <div class="field">
-              <div class="label">Memory</div>
-              <textarea id="quickBody" class="input" placeholder="Write a quick memory..."></textarea>
-            </div>
-            <div class="button-row-center">
-              <button class="btn-inline" onclick="quickSave()">Save</button>
-              <button class="btn-ghost" onclick="showView('diary')">Open Diary</button>
-            </div>
-            <div class="hint" style="margin-top:10px;">
-              Tip: Use <span class="kbd">#tags</span> inside text too — it auto-detects tags.
-            </div>
-          </div>
+          <div class="card"><h3>Quick Add</h3><div class="field"><input id="quickTitle" class="input" placeholder="Title"></div><div class="row"><div class="field"><select id="quickMood" class="input"><option>🙂 Happy</option><option>😌 Calm</option><option>😤 Stressed</option><option>😢 Sad</option><option>🤩 Excited</option><option>😐 Neutral</option></select></div><div class="field"><input id="quickTags" class="input" placeholder="Tags (comma)"></div></div><div class="field"><textarea id="quickBody" class="input" placeholder="What's on your mind?" rows="3"></textarea></div><div class="button-row-center"><button class="btn-inline" onclick="quickSave()">Save Entry</button></div></div>
         </section>
 
-        <!-- DIARY -->
-        <section id="view-diary" class="hidden">
-          <h1>Diary</h1>
+        <!-- DIARY VIEW -->
+        <section id="view-diary" class="hidden"><h1>My Diary</h1><div class="card"><div class="row"><div class="field"><input type="text" id="diarySearch" class="input" placeholder="Search..." oninput="renderDiary()"></div><div class="field"><input type="date" id="dateFilter" class="input" onchange="renderDiary()"></div></div><div class="row"><div class="field"><select id="sortMode" class="input" onchange="renderDiary()"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></div><div class="field"><select id="moodFilter" class="input" onchange="renderDiary()"><option value="">All moods</option><option>🙂 Happy</option><option>😌 Calm</option><option>😤 Stressed</option><option>😢 Sad</option><option>🤩 Excited</option><option>😐 Neutral</option></select></div></div><div class="button-row-center"><button class="btn-inline" onclick="openEditor()"><i class="fas fa-plus"></i> New Entry</button></div></div><div id="diaryContainer"></div></section>
 
-          <div class="card" style="margin-top: 12px;">
-            <div class="row">
-              <div class="field" style="margin-top:0;">
-                <div class="label">Search</div>
-                <input type="text" id="diarySearch" class="input" placeholder="Search title, text, tag..." oninput="renderDiary()">
-              </div>
-              <div class="field" style="margin-top:0;">
-                <div class="label">Filter date</div>
-                <input type="date" id="dateFilter" class="input" onchange="renderDiary()">
-              </div>
-            </div>
-            <div class="row">
-              <div class="field" style="margin-top:10px;">
-                <div class="label">Sort</div>
-                <select id="sortMode" class="input" onchange="renderDiary()">
-                  <option value="newest">Newest first</option>
-                  <option value="oldest">Oldest first</option>
-                </select>
-              </div>
-              <div class="field" style="margin-top:10px;">
-                <div class="label">Mood</div>
-                <select id="moodFilter" class="input" onchange="renderDiary()">
-                  <option value="">All moods</option>
-                  <option>🙂 Happy</option>
-                  <option>😌 Calm</option>
-                  <option>😤 Stressed</option>
-                  <option>😢 Sad</option>
-                  <option>🤩 Excited</option>
-                  <option>😐 Neutral</option>
-                </select>
-              </div>
-            </div>
-            <div class="field">
-              <div class="button-row-center">New Entry</div>
-              <div class="button-row-center">
-              <button class="btn-inline" onclick="openEditor()">Create New</button>
-              </div>
-            </div>
-          </div>
+        <!-- STATS VIEW -->
+        <section id="view-stats" class="hidden"><h1>Statistics</h1><div class="card"><div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; text-align:center;"><div><div class="big" id="kpiTotal" style="font-size:2rem; font-weight:bold;">0</div><div>Total Entries</div></div><div><div class="big" id="kpiStreak" style="font-size:2rem; font-weight:bold;">0</div><div>Day Streak</div></div><div><div class="big" id="kpiThisMonth" style="font-size:2rem; font-weight:bold;">0</div><div>This Month</div></div></div></div><div class="card"><canvas id="chart"></canvas></div></section>
 
-          <div id="diaryContainer"></div>
-        </section>
+        <!-- FRIENDS VIEW -->
+        <section id="view-friends" class="hidden"><h1>Friends</h1><div class="card"><h3>Add Friend</h3><input id="friendEmail" class="input" placeholder="friend@example.com"><div class="button-row-center"><button class="btn-inline" onclick="addFriendAction()">Send Request</button></div></div><div class="card"><h3>Pending Requests</h3><div id="pendingRequests"></div></div><div class="card"><h3>Shared With Me</h3><div id="sharedInboxContainer"></div></div><div class="card"><h3>My Friends</h3><div id="confirmedFriendsList"></div></div></section>
 
-        <!-- STATS -->
-        <section id="view-stats" class="hidden">
-          <h1>Stats</h1>
-
-          <div class="card" style="margin-top:12px;">
-            <div class="kpi">
-              <div class="k">
-                <div class="big" id="kpiTotal">0</div>
-                <div class="small">Total entries</div>
-              </div>
-              <div class="k">
-                <div class="big" id="kpiStreak">0</div>
-                <div class="small">Current streak (days)</div>
-              </div>
-              <div class="k">
-                <div class="big" id="kpiThisMonth">0</div>
-                <div class="small">This month</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <h3>Entries per month</h3>
-            <canvas id="chart"></canvas>
-            <div class="hint" style="margin-top:10px;">
-              This chart is generated locally (no tracking).
-            </div>
-          </div>
-        </section>
-
-        <!-- FRIENDS -->
-        <section id="view-friends" class="hidden">
-          <h1>My Friends</h1>
-
-          <div class="card" style="text-align: center; padding: 40px;">
-            <i class="fas fa-user-plus fa-3x" style="color: var(--primary); margin-bottom: 15px;"></i>
-            <h3>Add a Friend</h3>
-            <p class="muted">Connect with other journal users.</p>
-            
-            <div style="max-width: 400px; margin: 20px auto;">
-              <input type="email" id="friendEmail" class="input" placeholder="friend@example.com">
-              <div class="button-row-center" style="margin-top: 25px;">
-                <button class="btn-inline" onclick="addFriendAction()">
-                  <i class="fas fa-paper-plane"></i> Send Request
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="card" style="margin-top: 20px; border-left: 4px solid var(--primary);">
-            <h3><i class="fas fa-envelope-open-text"></i> Shared with Me</h3>
-            <div id="sharedInboxContainer">
-              <p class="muted" style="text-align:center; padding:10px;">Checking for shared entries...</p>
-            </div>
-          </div>
-
-          <div class="card" style="margin-top: 20px;">
-            <h3><i class="fas fa-bell"></i> Pending Requests</h3>
-            <div id="pendingRequests"></div>
-          </div>
-
-          <div class="card" style="margin-top: 20px; border-top: 4px solid #10b981;">
-            <h3><i class="fas fa-users"></i> My Friends</h3>
-            <div id="confirmedFriendsList"></div>
-          </div>
-        </section>
-
-        <!-- SETTINGS -->
-        <section id="view-settings" class="hidden">
-          <h1>Settings</h1>
-
-          <div class="card" style="text-align:center; margin-top: 12px;">
-            <div style="width: 120px; height:120px; border-radius:999px; margin: 0 auto 14px; overflow:hidden; border:4px solid var(--card); box-shadow: var(--shadow); background: color-mix(in oklab, var(--border) 20%, transparent);">
-              <img id="userAvatar" alt="profile photo" style="width:100%; height:100%; object-fit:cover;" src="https://ui-avatars.com/api/?background=10b981&color=fff&name=User">
-            </div>
-
-            <input type="file" id="fileInp" class="hidden" accept="image/*" onchange="uploadPhoto(event)">
-            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
-              <button class="btn-inline" onclick="document.getElementById('fileInp').click()"><i class="fas fa-image"></i> Change Photo</button>
-              <button class="btn-ghost" onclick="resetPhoto()"><i class="fas fa-rotate-left"></i> Reset</button>
-            </div>
-
-            <div class="card" style="max-width: 520px; margin: 16px auto 0; text-align:left;">
-              <div class="label">Full Name</div>
-              <div style="font-weight: 950; font-size: 1.1rem;" id="profName">Name</div>
-
-              <div class="label" style="margin-top: 12px;">Email</div>
-              <div style="font-weight: 850;" id="profEmail">Email</div>
-
-              <div class="label" style="margin-top: 12px;">Secret PIN</div>
-              <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:14px; background: color-mix(in oklab, var(--border) 8%, transparent); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
-                <span id="pinText">••••••</span>
-                <button class="iconbtn" type="button" onclick="togglePinVisibility()" title="Show/Hide PIN">
-                  <i class="fas fa-eye" id="pinToggleIcon"></i>
-                </button>
-              </div>
-
-              <div class="label" style="margin-top: 12px;">Security</div>
-              <div class="hint" style="text-align:left; margin-top:6px;">
-                Entries are encrypted with a key derived from your password. If you forget your password, encrypted entries cannot be recovered.
-              </div>
-
-              <div class="label" style="margin-top: 12px;">Data Controls</div>
-              <div class="button-row-center">
-                <button class="btn-ghost" onclick="exportData()"><i class="fas fa-download"></i> Export</button>
-                <button class="btn-ghost" onclick="document.getElementById('importFile').click()"><i class="fas fa-upload"></i> Import</button>
-                <button class="btn-inline btn-danger" onclick="wipeMyData()"><i class="fas fa-trash"></i> Wipe My Data</button>
-              </div>
-
-              <div class="hint" style="text-align:left; margin-top:10px;">
-                Wipe removes your account + diary.
-              </div>
-            </div>
-          </div>
-        </section>
+        <!-- SETTINGS VIEW -->
+        <section id="view-settings" class="hidden"><h1>Settings</h1><div class="card" style="text-align:center;"><img id="userAvatar" style="width:100px;height:100px;border-radius:50%;margin-bottom:16px;"><br><button class="btn-ghost" onclick="document.getElementById('photoInput').click()">Change Photo</button><input id="photoInput" type="file" accept="image/*" class="hidden" onchange="uploadPhoto(event)"></div><div class="card"><p><strong>Name:</strong> <span id="profName"></span></p><p><strong>Email:</strong> <span id="profEmail"></span></p><div class="button-row-center"><button class="btn-ghost" onclick="exportData()">Export Data</button><button class="btn-ghost" style="background:#ef4444;color:white;" onclick="wipeMyData()">Delete Account</button></div></div></section>
       </main>
     </div>
   </section>
 
-  <!-- Editor Modal -->
-  <div class="modal-backdrop" id="editorBackdrop" role="dialog" aria-modal="true" aria-label="Entry editor">
-    <div class="modal">
-      <div class="modal-head">
-        <h3 id="editorTitle">New Entry</h3>
-        <button class="iconbtn" onclick="closeEditor()" title="Close"><i class="fas fa-xmark"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="row">
-          <div class="field" style="margin-top:0;">
-            <div class="label">Title</div>
-            <input id="eTitle" class="input" placeholder="Title (optional)">
-          </div>
-          <div class="field" style="margin-top:0;">
-            <div class="label">Mood</div>
-            <select id="eMood" class="input">
-              <option>🙂 Happy</option>
-              <option>😌 Calm</option>
-              <option>😤 Stressed</option>
-              <option>😢 Sad</option>
-              <option>🤩 Excited</option>
-              <option selected>😐 Neutral</option>
-            </select>
-          </div>
-        </div>
+  <!-- EDITOR MODAL -->
+  <div class="modal-backdrop" id="editorBackdrop"><div class="modal"><div class="modal-head"><h3 id="editorTitle">Entry</h3><button class="iconbtn" onclick="closeEditor()">✕</button></div><div class="modal-body"><input id="eTitle" class="input" placeholder="Title"><div class="row" style="margin-top:10px;"><select id="eMood" class="input"><option>🙂 Happy</option><option>😌 Calm</option><option>😤 Stressed</option><option>😢 Sad</option><option>🤩 Excited</option><option>😐 Neutral</option></select><input id="eTags" class="input" placeholder="Tags (comma)"></div><div class="field"><input type="date" id="eDate" class="input"></div><div class="field"><textarea id="eBody" class="input" rows="6" placeholder="Write your entry..."></textarea></div><div class="field"><input type="file" id="eImage" accept="image/*" onchange="loadEntryImage(event)"><img id="imagePreview" class="thumb hidden"></div><div class="preview" id="preview">Preview will appear here...</div></div><div class="modal-foot"><button class="btn-ghost" onclick="closeEditor()">Cancel</button><button class="btn-inline" onclick="saveFromEditor()">Save</button></div></div></div>
 
-        <div class="field">
-          <div class="label">Tags (comma separated)</div>
-          <input id="eTags" class="input" placeholder="e.g., goals, family, school">
-        </div>
-
-        <div class="field">
-          <div class="label">Date</div>
-          <input id="eDate" type="date" class="input">
-        </div>
-
-        <div class="field">
-          <div class="label">Body (supports basic markdown: # heading, **bold**, `code`, > quote)</div>
-          <textarea id="eBody" class="input" placeholder="Write here..."></textarea>
-        </div>
-
-        <div class="row">
-          <div class="field">
-            <div class="label">Attach image (optional, max ~1MB)</div>
-            <input id="eImage" type="file" class="input" accept="image/*" onchange="loadEntryImage(event)">
-          </div>
-          <div class="field">
-            <div class="label">Preview</div>
-            <div id="preview" class="preview">Start typing to see preview…</div>
-          </div>
-        </div>
-        <img id="imagePreview" class="thumb hidden" alt="attachment preview">
-        <div class="hint" style="text-align:left; margin-top:10px;">
-          Save: <span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> • Close: <span class="kbd">Esc</span>
-        </div>
-      </div>
-      <div class="modal-foot">
-        <div class="button-row-center">
-        <button class="btn-ghost" onclick="closeEditor()">Cancel</button>
-        <button class="btn-inline" onclick="saveFromEditor()"><i class="fas fa-floppy-disk"></i> Save</button>
-      </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- About Modal -->
-  <div class="modal-backdrop" id="aboutBackdrop" role="dialog" aria-modal="true" aria-label="About">
-    <div class="modal" style="max-width:640px;">
-      <div class="modal-head">
-        <h3>About • My Life Journal</h3>
-        <button class="iconbtn" onclick="closeAbout()" title="Close"><i class="fas fa-xmark"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="card notice" style="margin:0;">
-          <div style="font-weight:950; margin-bottom:6px;">What this is</div>
-          <div class="muted" style="line-height:1.5;">
-            A Journal that you can use through Internet, you don't need papers and pen
-            or even a book to write or put your thoughts about your life story.
-            Share with Friends or Family your thoughts, if you want. Be Open and Creative whenever you want to My Life Journal.
-          </div>
-        </div>
-        <br>
-        <div class="card notice" style="margin:0;">
-          <h3>Our Team</h3>
-          <div class="team">
-            <div class="member">
-              <a href="https://www.facebook.com/carlonuyda7" target="_blank">
-                <img src="/Team/Carlo.jpg" alt="Carlo">
-              </a>
-              <p>Carlo Nuyda</p>
-            </div>
-            <div class="member">
-              <a href="https://www.facebook.com/yurievillacorte" target="_blank">
-                <img src="/Team/Yurie.jpg" alt="Yurie">
-              </a>
-              <p>Yurie Villacorte</p>
-            </div>
-            <div class="member">
-              <a href="https://www.facebook.com/archie.jhon.gregorio" target="_blank">
-                <img src="/Team/Archie.jpg" alt="Archie">
-              </a>
-              <p>Archie Jhon Gregorio</p>
-            </div>
-            <div class="member">
-              <a href="https://www.facebook.com/kyle.serapia.507" target="_blank">
-                <img src="/Team/Daisy.jpg" alt="Daisy">
-              </a>
-              <p>Daisy Serapia</p>
-            </div>
-            <div class="member">
-              <a href="https://www.facebook.com/trishan.laurito.2025" target="_blank">
-                <img src="/Team/Trishan.jpg" alt="Trishan">
-              </a>
-              <p>Trishan Laurito</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- ABOUT MODAL -->
+  <div class="modal-backdrop" id="aboutBackdrop"><div class="modal"><div class="modal-head"><h3>About My Life Journal</h3><button class="iconbtn" onclick="closeAbout()">✕</button></div><div class="modal-body"><p>Secure, encrypted journaling app. Your data is encrypted before it leaves your browser.</p><div class="team"><div class="member"><img src="/Team/Carlo.jpg" onerror="this.src='https://ui-avatars.com/api/?name=Carlo'"><p>Carlo</p></div><div class="member"><img src="/Team/Yurie.jpg" onerror="this.src='https://ui-avatars.com/api/?name=Yurie'"><p>Yurie</p></div><div class="member"><img src="/Team/Archie.jpg" onerror="this.src='https://ui-avatars.com/api/?name=Archie'"><p>Archie</p></div></div></div></div></div>
 
   <script>
 const LS_USERS = "journal_ultra_users";
 const LS_CURRENT = "journal_ultra_current";
 const LS_THEME = "journal_ultra_theme";
-
-// ========== BACKEND API CONFIGURATION ==========
 const API_URL = window.location.origin;
 
-async function syncToBackend() {
-  const currentUser = readCurrent();
-  if (!currentUser || !currentUser.email) return;
-  
-  try {
-    const response = await fetch(`${API_URL}/api/sync/pull`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: currentUser.email })
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      if (data.encryptedVault && data.encryptedVault.iv) {
-        const users = readUsers();
-        const userIndex = users.findIndex(u => u.email === currentUser.email);
-        if (userIndex !== -1) {
-          users[userIndex].vault = data.encryptedVault;
-          writeUsers(users);
-        }
-      }
-    }
-  } catch (error) {
-    console.log("Backend sync not available, using localStorage only");
-  }
-}
-
-const originalSaveVault = saveVault;
-saveVault = async function(vault) {
-  await originalSaveVault(vault);
-  
-  const currentUser = readCurrent();
-  if (currentUser && currentUser.email) {
-    try {
-      await fetch(`${API_URL}/api/sync/push`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          email: currentUser.email, 
-          encryptedVault: getUser()?.vault 
-        })
-      });
-    } catch(e) { /* Backend not available */ }
-  }
-};
-
-setInterval(() => {
-  const currentUser = readCurrent();
-  if (currentUser && document.getElementById("app").style.display !== "none") {
-    syncToBackend();
-  }
-}, 30000);
-// ========== END BACKEND API CONFIGURATION ==========
-
 const $ = (id) => document.getElementById(id);
+
+function escapeHtml(str){ return String(str ?? "").replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
 
 function toast(type, title, msg){
   const wrap = $("toastWrap");
   const el = document.createElement("div");
-  el.className = "toast" + (type ? " " + type : "");
-  el.innerHTML = `
-    <i class="fas ${type === "danger" ? "fa-triangle-exclamation" : type === "warn" ? "fa-circle-exclamation" : "fa-circle-check"}"></i>
-    <div>
-      <div class="t-title">${escapeHtml(title)}</div>
-      <div class="t-msg">${escapeHtml(msg)}</div>
-    </div>
-    <button class="x" aria-label="Close" onclick="this.parentElement.remove()">✕</button>
-  `;
+  el.className = "toast" + (type === "danger" ? " danger" : "");
+  el.innerHTML = `<i class="fas ${type === "danger" ? "fa-exclamation-triangle" : "fa-check-circle"}"></i><div><div class="t-title">${escapeHtml(title)}</div><div class="t-msg">${escapeHtml(msg)}</div></div><button class="x" onclick="this.parentElement.remove()">✕</button>`;
   wrap.appendChild(el);
-  setTimeout(() => { if (el && el.parentElement) el.remove(); }, 4500);
+  setTimeout(() => el.remove(), 4000);
 }
 
-function escapeHtml(str){
-  return String(str ?? "")
-    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
-}
-
-function applyTheme(theme){
-  document.documentElement.setAttribute("data-theme", theme);
-  localStorage.setItem(LS_THEME, theme);
-}
-
-function toggleTheme(){
-  const cur = localStorage.getItem(LS_THEME) || "light";
-  applyTheme(cur === "light" ? "dark" : "light");
-}
-
-(function initTheme(){
-  const saved = localStorage.getItem(LS_THEME);
-  if(saved) applyTheme(saved);
-  else {
-    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-    applyTheme(prefersDark ? "dark" : "light");
-  }
-})();
+function applyTheme(t){ document.documentElement.setAttribute("data-theme", t); localStorage.setItem(LS_THEME, t); }
+function toggleTheme(){ let cur = localStorage.getItem(LS_THEME) || "light"; applyTheme(cur === "light" ? "dark" : "light"); }
+(function(){ let saved = localStorage.getItem(LS_THEME); applyTheme(saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")); })();
 
 function readUsers(){ return JSON.parse(localStorage.getItem(LS_USERS) || "[]"); }
 function writeUsers(users){ localStorage.setItem(LS_USERS, JSON.stringify(users)); }
 function readCurrent(){ return JSON.parse(localStorage.getItem(LS_CURRENT) || "null"); }
 function writeCurrent(obj){ localStorage.setItem(LS_CURRENT, JSON.stringify(obj)); }
-function uuid(){ return "id_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16); }
+function uuid(){ return Date.now() + "-" + Math.random().toString(36).substr(2, 9); }
 function validPin(pin){ return /^[0-9]{6}$/.test(pin); }
 
-function bytesToB64(bytes){
-  let bin = "";
-  bytes.forEach(b => bin += String.fromCharCode(b));
-  return btoa(bin);
-}
+function bytesToB64(bytes){ let bin = ""; bytes.forEach(b => bin += String.fromCharCode(b)); return btoa(bin); }
+function b64ToBytes(s){ return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
+async function sha256(str){ let enc = new TextEncoder().encode(str); let hash = await crypto.subtle.digest("SHA-256", enc); return bytesToB64(new Uint8Array(hash)); }
+async function deriveKey(pwd, salt){ let enc = new TextEncoder(); let base = await crypto.subtle.importKey("raw", enc.encode(pwd), "PBKDF2", false, ["deriveKey"]); return crypto.subtle.deriveKey({ name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]); }
+async function encryptJson(obj, pwd, salt){ let iv = crypto.getRandomValues(new Uint8Array(12)); let key = await deriveKey(pwd, b64ToBytes(salt)); let plain = new TextEncoder().encode(JSON.stringify(obj)); let cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, plain); return { iv: bytesToB64(iv), data: bytesToB64(new Uint8Array(cipher)) }; }
+async function decryptJson(enc, pwd, salt){ let key = await deriveKey(pwd, b64ToBytes(salt)); let plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64ToBytes(enc.iv) }, key, b64ToBytes(enc.data)); return JSON.parse(new TextDecoder().decode(plain)); }
 
 let captchaCode = "";
-
 function generateCaptcha(){
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
   let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
+  for (let i = 0; i < 6; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
   captchaCode = code;
-  
   const captchaBox = document.getElementById("captchaBox");
-  if (captchaBox) {
-    captchaBox.innerText = captchaCode;
-  }
-  
+  if (captchaBox) captchaBox.innerText = captchaCode;
   const captchaInp = document.getElementById("captchaInp");
-  if (captchaInp) {
-    captchaInp.value = "";
-  }
+  if (captchaInp) captchaInp.value = "";
 }
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', generateCaptcha);
-} else {
-  generateCaptcha();
-}
-
-function b64ToBytes(b64){
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
-}
-
-async function sha256(str){
-  const enc = new TextEncoder().encode(str);
-  const hash = await crypto.subtle.digest("SHA-256", enc);
-  return bytesToB64(new Uint8Array(hash));
-}
-
-async function deriveAesKey(password, saltBytes){
-  const enc = new TextEncoder();
-  const baseKey = await crypto.subtle.importKey(
-    "raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]
-  );
-  return crypto.subtle.deriveKey(
-    { name:"PBKDF2", salt: saltBytes, iterations: 200000, hash:"SHA-256" },
-    baseKey,
-    { name:"AES-GCM", length: 256 },
-    false,
-    ["encrypt","decrypt"]
-  );
-}
-
-async function encryptJson(obj, password, saltB64){
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const salt = b64ToBytes(saltB64);
-  const key = await deriveAesKey(password, salt);
-  const plain = new TextEncoder().encode(JSON.stringify(obj));
-  const cipher = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, key, plain);
-  return { iv: bytesToB64(iv), data: bytesToB64(new Uint8Array(cipher)) };
-}
-
-async function decryptJson(encObj, password, saltB64){
-  const salt = b64ToBytes(saltB64);
-  const iv = b64ToBytes(encObj.iv);
-  const data = b64ToBytes(encObj.data);
-  const key = await deriveAesKey(password, salt);
-  const plainBuf = await crypto.subtle.decrypt({ name:"AES-GCM", iv }, key, data);
-  const text = new TextDecoder().decode(plainBuf);
-  return JSON.parse(text);
-}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', generateCaptcha);
+else generateCaptcha();
 
 let authMode = "login";
-
 function toggleMode(mode){
   authMode = mode;
-  $("tabLogin").classList.toggle("active", mode === "login");
-  $("tabSignup").classList.toggle("active", mode === "signup");
-  $("tabLogin").setAttribute("aria-selected", mode === "login" ? "true" : "false");
-  $("tabSignup").setAttribute("aria-selected", mode === "signup" ? "true" : "false");
-  $("fieldName").classList.toggle("hidden", mode === "login");
-  $("submitBtn").innerText = mode === "login" ? "Login" : "Create Account";
-  $("pass").setAttribute("autocomplete", mode === "login" ? "current-password" : "new-password");
+  document.getElementById("tabLogin").classList.toggle("active", mode === "login");
+  document.getElementById("tabSignup").classList.toggle("active", mode === "signup");
+  document.getElementById("fieldName").classList.toggle("hidden", mode === "login");
+  document.getElementById("submitBtn").innerText = mode === "login" ? "Login" : "Create Account";
   generateCaptcha();
 }
 
-function toggleRecovery(show){
-  $("loginFormContainer").classList.toggle("hidden", show);
-  $("recoveryFormContainer").classList.toggle("hidden", !show);
-  generateCaptcha();
-}
-
-async function handleRecovery(){
-  const email = $("recoverEmail").value.trim().toLowerCase();
-  const name  = $("recoverNameInput").value.trim();
-  const newPass = $("newPass").value;
-  const newPin  = $("newPin").value;
-
-  if(!email || !name) return toast("warn","Missing details","Please enter your email and full name.");
-  if(newPass && newPass.length < 8) return toast("warn","Weak password","Use at least 8 characters.");
-  if(newPin && !validPin(newPin)) return toast("warn","Invalid PIN","PIN must be exactly 6 digits.");
-
-  const users = readUsers();
-  const idx = users.findIndex(u => u.email === email && u.name.toLowerCase() === name.toLowerCase());
-  if(idx === -1) return toast("danger","Details mismatch","No matching account.");
-
-  if(newPass){
-    const salt = bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
-    users[idx].passHash = await sha256(newPass + "|" + salt);
-    users[idx].kdfSalt = salt;
-    users[idx].vault = { iv:"", data:"" };
-    users[idx].failed = 0;
-    users[idx].lockUntil = 0;
-  }
-  if(newPin){
-    const psalt = bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
-    users[idx].pinSalt = psalt;
-    users[idx].pinHash = await sha256(newPin + "|" + psalt);
-  }
-  writeUsers(users);
-
-  toast("", "Updated!", "Reset complete. You can log in now.");
-  $("recoverEmail").value = "";
-  $("recoverNameInput").value = "";
-  $("newPass").value = "";
-  $("newPin").value = "";
-  toggleRecovery(false);
-}
-
-/* ---------- Login / Signup with BACKEND ---------- */
 let sessionPassword = "";
 
-// SIGNUP - saves to MongoDB
+// SIGNUP with DEBUG LOGGING
 async function signupUser(email, name, passwordHash, pinHash, kdfSalt, pinSalt){
   try {
+    console.log("📤 SIGNUP ATTEMPT");
+    console.log("Data being sent:", { email, name, passwordHash: passwordHash ? passwordHash.substring(0,20)+"...", pinHash: pinHash ? pinHash.substring(0,20)+"...", kdfSalt: kdfSalt ? kdfSalt.substring(0,20)+"...", pinSalt: pinSalt ? pinSalt.substring(0,20)+"..." });
+    
     const response = await fetch(`${API_URL}/api/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1244,24 +474,30 @@ async function signupUser(email, name, passwordHash, pinHash, kdfSalt, pinSalt){
     });
     
     const data = await response.json();
+    console.log("Response status:", response.status);
+    console.log("Response data:", data);
+    
     if (!response.ok) throw new Error(data.error);
     
     setCurrentUser(data);
     sessionPassword = passwordHash;
-    $("authSection").style.display = "none";
-    $("app").style.display = "block";
+    document.getElementById("authSection").style.display = "none";
+    document.getElementById("app").style.display = "block";
     await saveVault({ posts: [] });
     await loadUserData();
     showView("home");
     toast("", "Success", "Account created!");
   } catch (e) {
+    console.error("❌ Signup error:", e);
     toast("danger", "Signup Failed", e.message);
   }
 }
 
-// LOGIN - checks MongoDB (cross-device)
+// LOGIN with DEBUG LOGGING
 async function loginUser(email, passwordHash, pinHash){
   try {
+    console.log("📤 LOGIN ATTEMPT for:", email);
+    
     const response = await fetch(`${API_URL}/api/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1269,73 +505,66 @@ async function loginUser(email, passwordHash, pinHash){
     });
     
     const data = await response.json();
+    console.log("Response status:", response.status);
+    
     if (!response.ok) throw new Error(data.error);
     
     setCurrentUser(data);
     sessionPassword = passwordHash;
-    $("authSection").style.display = "none";
-    $("app").style.display = "block";
+    document.getElementById("authSection").style.display = "none";
+    document.getElementById("app").style.display = "block";
     await loadUserData();
     showView("home");
     toast("", "Welcome", "Logged in successfully");
   } catch (e) {
+    console.error("❌ Login error:", e);
     toast("danger", "Login Failed", e.message);
   }
 }
 
-// Form submit handler
-$("authForm").addEventListener("submit", async (e) => {
+document.getElementById("authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  if(($("captchaInp").value || "").trim().toUpperCase() !== captchaCode){
+  if((document.getElementById("captchaInp").value || "").trim().toUpperCase() !== captchaCode){
     generateCaptcha();
-    return toast("danger","Wrong captcha","Try again.");
+    return toast("danger", "Wrong captcha", "Try again.");
   }
 
-  const email = $("email").value.trim().toLowerCase();
-  const pass  = $("pass").value;
-  const pin   = ($("pin").value || "").trim();
+  const email = document.getElementById("email").value.trim().toLowerCase();
+  const pass = document.getElementById("pass").value;
+  const pin = (document.getElementById("pin").value || "").trim();
 
-  if(!email) return toast("warn","Missing email","Please enter your email.");
-  if(!pass) return toast("warn","Missing password","Please enter your password.");
-  if(!validPin(pin)) return toast("warn","Invalid PIN","PIN must be exactly 6 digits.");
+  if(!email) return toast("warn", "Missing email", "Please enter your email.");
+  if(!pass) return toast("warn", "Missing password", "Please enter your password.");
+  if(!validPin(pin)) return toast("warn", "Invalid PIN", "PIN must be exactly 6 digits.");
 
   if(authMode === "signup"){
-    const name = $("regName").value.trim();
-    if(!name || name.length < 2) return toast("warn","Name required","Enter your full name.");
-    if(pass.length < 8) return toast("warn","Weak password","Use at least 8 characters.");
+    const name = document.getElementById("regName").value.trim();
+    if(!name || name.length < 2) return toast("warn", "Name required", "Enter your full name.");
+    if(pass.length < 8) return toast("warn", "Weak password", "Use at least 8 characters.");
 
     const kdfSalt = bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
     const pinSalt = bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
     const passwordHash = await sha256(pass + "|" + kdfSalt);
     const pinHash = await sha256(pin + "|" + pinSalt);
     
+    console.log("Generated salts:", { kdfSalt: kdfSalt.substring(0,20)+"...", pinSalt: pinSalt.substring(0,20)+"..." });
+    
     await signupUser(email, name, passwordHash, pinHash, kdfSalt, pinSalt);
   } else {
-    // LOGIN - Get salts from backend (cross-device fix)
-    try {
-      const findResponse = await fetch(`${API_URL}/api/user/find`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email })
-      });
-      
-      const userData = await findResponse.json();
-      
-      if (!findResponse.ok || !userData.kdfSalt) {
-        toast("danger", "Account Not Found", "No account found with this email. Please sign up first.");
-        return;
-      }
-      
-      const passwordHash = await sha256(pass + "|" + userData.kdfSalt);
-      const pinHash = await sha256(pin + "|" + userData.pinSalt);
-      
-      await loginUser(email, passwordHash, pinHash);
-      
-    } catch (error) {
-      console.error("Login error:", error);
-      toast("danger", "Login Failed", "Server error. Please try again.");
+    // For login, check if user exists in localStorage for salts
+    let users = readUsers();
+    const user = users.find(u => u.email === email);
+    
+    if (!user) {
+      toast("danger", "Account Not Found", "Please sign up first or check your email");
+      return;
     }
+    
+    const passwordHash = await sha256(pass + "|" + user.kdfSalt);
+    const pinHash = await sha256(pin + "|" + user.pinSalt);
+    
+    await loginUser(email, passwordHash, pinHash);
   }
 });
 
@@ -1343,118 +572,45 @@ async function login(email, password){
   try {
     sessionPassword = password;
     writeCurrent({ email });
-
     const user = getUser();
-    if (!user) {
-      throw new Error("User data not found");
-    }
-
-    $("authSection").style.display = "none";
-    $("app").style.display = "block";
-
+    if (!user) throw new Error("User data not found");
+    document.getElementById("authSection").style.display = "none";
+    document.getElementById("app").style.display = "block";
     await hydrateUserUI();
     showView("home");
     await refreshAll();
-
     toast("", "Welcome", "Session ready.");
   } catch (error) {
     console.error("Login error:", error);
     toast("danger", "Login Failed", "Please try again");
-    $("authSection").style.display = "flex";
-    $("app").style.display = "none";
+    document.getElementById("authSection").style.display = "flex";
+    document.getElementById("app").style.display = "none";
   }
 }
 
-async function hydrateUserUI(){
-  const me = getUser();
-  if(!me) return;
-
-  $("userGreet").innerText = me.name;
-  $("userEmailSmall").innerText = me.email;
-  $("profName").innerText = me.name;
-  $("profEmail").innerText = me.email;
-
-  const fallback = `https://ui-avatars.com/api/?background=10b981&color=fff&name=${encodeURIComponent(me.name || "User")}`;
-  $("userAvatar").src = me.photo || fallback;
-  $("topAvatar").src  = me.photo || fallback;
-
-  $("pinText").innerText = "••••••";
-  pinHidden = true;
-}
-
-async function loadUserData(){
-  const me = getUser();
-  if(!me) return;
-  $("userGreet").innerText = me.name || me.email.split("@")[0];
-  $("userEmailSmall").innerText = me.email;
-  $("profName").innerText = me.name || "User";
-  $("profEmail").innerText = me.email;
-  let avatarUrl = me.photo || `https://ui-avatars.com/api/?background=10b981&color=fff&name=${encodeURIComponent(me.name||"User")}`;
-  $("userAvatar").src = avatarUrl;
-  $("topAvatar").src = avatarUrl;
-}
-
-/* ---------- Drawer / Navigation ---------- */
-function toggleDrawer(){
-  const side = $("sidebar");
-  const back = $("drawerBackdrop");
-  const open = !side.classList.contains("open");
-  side.classList.toggle("open", open);
-  back.classList.toggle("show", open);
-}
-
-function closeDrawer(){
-  $("sidebar").classList.remove("open");
-  $("drawerBackdrop").classList.remove("show");
-}
-
-function showView(v){
-  ["home","diary","stats","friends","settings"].forEach(id => {
-    const el = $("view-"+id);
-    if(el) el.classList.add("hidden");
-  });
-  const targetView = $("view-"+v);
-  if(targetView) targetView.classList.remove("hidden");
-  
-  document.querySelectorAll(".nav a").forEach(a => a.classList.remove("active"));
-  const navItem = $("nav-"+v);
-  if(navItem) navItem.classList.add("active");
-  
-  if(window.innerWidth <= 820) closeDrawer();
-
-  if(v === "stats") updateStats();
-  if(v === "friends") {
-    loadFriendsList();
-    checkIncomingRequests();
-    loadSharedInbox();
-  }
-}
-
-/* ---------- Current user ---------- */
 function getUser(){
   const cur = readCurrent();
   if(!cur?.email) return null;
   return readUsers().find(u => u.email === cur.email) || null;
 }
 
+function setCurrentUser(u){ writeCurrent(u); }
 function upsertUser(updated){
   const users = readUsers();
   const idx = users.findIndex(u => u.email === updated.email);
-  if(idx !== -1) users[idx] = updated; else users.push(updated);
+  if(idx !== -1) users[idx] = updated;
+  else users.push(updated);
   writeUsers(users);
 }
 
 async function openVault(){
   const me = getUser();
   if(!me) return { posts: [] };
-
-  if(!me.vault || !me.vault.iv || !me.vault.data){
-    return { posts: [] };
-  }
+  if(!me.vault || !me.vault.iv || !me.vault.data) return { posts: [] };
   try{
     return await decryptJson(me.vault, sessionPassword, me.kdfSalt);
-  }catch(err){
-    toast("danger","Decrypt failed","Could not open encrypted diary. Logging out for safety.");
+  } catch(err){
+    toast("danger", "Decrypt failed", "Could not open encrypted diary. Logging out.");
     logout(false);
     throw err;
   }
@@ -1465,780 +621,317 @@ async function saveVault(vault){
   if(!me) return;
   me.vault = await encryptJson(vault, sessionPassword, me.kdfSalt);
   upsertUser(me);
+  await syncToBackend();
 }
 
-/* ---------- PIN visibility ---------- */
-let pinHidden = true;
-
-function togglePinVisibility(){
+async function loadUserData(){
   const me = getUser();
-  
-  if(!me) {
-    toast("danger", "Error", "Could not find user data.");
-    return;
-  }
+  if(!me) return;
+  document.getElementById("userGreet").innerText = me.name || me.email.split("@")[0];
+  document.getElementById("userEmailSmall").innerText = me.email;
+  document.getElementById("profName").innerText = me.name || "User";
+  document.getElementById("profEmail").innerText = me.email;
+  let avatarUrl = me.photo || `https://ui-avatars.com/api/?background=10b981&color=fff&name=${encodeURIComponent(me.name || "User")}`;
+  document.getElementById("userAvatar").src = avatarUrl;
+  document.getElementById("topAvatar").src = avatarUrl;
+}
 
+async function hydrateUserUI(){
+  const me = getUser();
+  if(!me) return;
+  document.getElementById("userGreet").innerText = me.name;
+  document.getElementById("userEmailSmall").innerText = me.email;
+  document.getElementById("profName").innerText = me.name;
+  document.getElementById("profEmail").innerText = me.email;
+  const fallback = `https://ui-avatars.com/api/?background=10b981&color=fff&name=${encodeURIComponent(me.name || "User")}`;
+  document.getElementById("userAvatar").src = me.photo || fallback;
+  document.getElementById("topAvatar").src = me.photo || fallback;
+  document.getElementById("pinText").innerText = "••••••";
+  pinHidden = true;
+}
+
+async function syncToBackend(){
+  const currentUser = readCurrent();
+  if(!currentUser || !currentUser.email) return;
+  try{
+    const response = await fetch(`${API_URL}/api/sync/pull`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: currentUser.email }) });
+    if(response.ok){
+      const data = await response.json();
+      if(data.encryptedVault && data.encryptedVault.iv){
+        const users = readUsers();
+        const userIndex = users.findIndex(u => u.email === currentUser.email);
+        if(userIndex !== -1){
+          users[userIndex].vault = data.encryptedVault;
+          writeUsers(users);
+        }
+      }
+    }
+  } catch(error){ console.log("Backend sync not available"); }
+}
+
+setInterval(() => {
+  const currentUser = readCurrent();
+  if(currentUser && document.getElementById("app").style.display !== "none") syncToBackend();
+}, 30000);
+
+function logout(showToast){ if(showToast) toast("", "Logged out", "See you next time!"); sessionPassword = ""; localStorage.removeItem(LS_CURRENT); location.reload(); }
+
+function toggleDrawer(){ document.getElementById("sidebar").classList.toggle("open"); document.getElementById("drawerBackdrop").classList.toggle("show"); }
+function closeDrawer(){ document.getElementById("sidebar").classList.remove("open"); document.getElementById("drawerBackdrop").classList.remove("show"); }
+
+function showView(v){
+  ["home","diary","stats","friends","settings"].forEach(id => { const el = document.getElementById("view-"+id); if(el) el.classList.add("hidden"); });
+  document.getElementById("view-"+v).classList.remove("hidden");
+  ["home","diary","stats","friends","settings"].forEach(id => { const nav = document.getElementById("nav-"+id); if(nav) nav.classList.remove("active"); });
+  document.getElementById("nav-"+v).classList.add("active");
+  if(window.innerWidth <= 768) closeDrawer();
+  if(v === "stats") updateStats();
+  if(v === "friends") { loadFriendsList(); checkIncomingRequests(); loadSharedInbox(); }
+}
+
+function openAbout(){ document.getElementById("aboutBackdrop").style.display = "flex"; }
+function closeAbout(){ document.getElementById("aboutBackdrop").style.display = "none"; }
+
+let pinHidden = true;
+function togglePinVisibility(){
   pinHidden = !pinHidden;
-  const pinDisplay = pinHidden ? "••••••" : "PIN is hashed for security";
-  
   const pinTextEl = document.getElementById("pinText");
   const pinIconEl = document.getElementById("pinToggleIcon");
-  
-  if (pinTextEl) pinTextEl.innerText = pinDisplay;
-  if (pinIconEl) pinIconEl.className = pinHidden ? "fas fa-eye" : "fas fa-eye-slash";
-
-  if(!pinHidden){
-    toast("info", "Security Info", "Your PIN is stored as a hash and cannot be displayed.");
-    setTimeout(() => {
-      if (!pinHidden) {
-        pinHidden = true;
-        if (pinTextEl) pinTextEl.innerText = "••••••";
-        if (pinIconEl) pinIconEl.className = "fas fa-eye";
-      }
-    }, 3000);
-  }
+  if(pinTextEl) pinTextEl.innerText = pinHidden ? "••••••" : "PIN is hashed for security";
+  if(pinIconEl) pinIconEl.className = pinHidden ? "fas fa-eye" : "fas fa-eye-slash";
+  if(!pinHidden){ toast("info", "Security Info", "Your PIN is stored as a hash and cannot be displayed."); setTimeout(() => { if(!pinHidden){ pinHidden = true; if(pinTextEl) pinTextEl.innerText = "••••••"; if(pinIconEl) pinIconEl.className = "fas fa-eye"; } }, 3000); }
 }
 
-/* ---------- Diary model ---------- */
 function normalizeEntry(e){
   const nowIso = new Date().toISOString();
-  return {
-    id: e.id || uuid(),
-    title: String(e.title || "").slice(0, 120),
-    body: String(e.body || ""),
-    mood: e.mood || "😐 Neutral",
-    tags: Array.isArray(e.tags) ? e.tags : [],
-    date: e.date || nowIso.slice(0,10),
-    createdAt: e.createdAt || nowIso,
-    editedAt: e.editedAt || "",
-    image: e.image || null
-  };
+  return { id: e.id || uuid(), title: String(e.title || "").slice(0,120), body: String(e.body || ""), mood: e.mood || "😐 Neutral", tags: Array.isArray(e.tags) ? e.tags : [], date: e.date || nowIso.slice(0,10), createdAt: e.createdAt || nowIso, editedAt: e.editedAt || "", image: e.image || null };
 }
+function extractInlineTags(text){ const matches = (text.match(/(^|\s)#([a-zA-Z0-9_\-]{2,})/g) || []).map(m => m.trim().replace("#","").toLowerCase()); return Array.from(new Set(matches)); }
 
-function extractInlineTags(text){
-  const matches = (text.match(/(^|\s)#([a-zA-Z0-9_\-]{2,})/g) || [])
-    .map(m => m.trim().replace("#","").toLowerCase());
-  return Array.from(new Set(matches));
-}
-
-/* ---------- Quick add ---------- */
-async function quickSave(){
-  const title = ($("quickTitle").value || "").trim();
-  const mood = $("quickMood").value;
-  const tags = ($("quickTags").value || "").split(",").map(t => t.trim()).filter(Boolean).map(t => t.toLowerCase());
-  const body = ($("quickBody").value || "").trim();
-  if(!body && !title) return toast("warn","Empty entry","Write something first.");
-
-  const inline = extractInlineTags(body);
-  const mergedTags = Array.from(new Set([...tags, ...inline]));
-
-  const vault = await openVault();
-  vault.posts = Array.isArray(vault.posts) ? vault.posts : [];
-  vault.posts.push(normalizeEntry({ title, mood, tags: mergedTags, body, date: new Date().toISOString().slice(0,10) }));
-
-  await saveVault(vault);
-
-  $("quickTitle").value = "";
-  $("quickTags").value = "";
-  $("quickBody").value = "";
-
-  toast("", "Saved", "Quick memory added.");
-  await refreshAll();
-}
-
-/* ---------- Editor modal ---------- */
-let editingId = null;
-let editingImageB64 = null;
-
-function openEditor(entry){
-  editingId = entry?.id || null;
-  editingImageB64 = entry?.image || null;
-
-  $("editorTitle").innerText = editingId ? "Edit Entry" : "New Entry";
-  $("eTitle").value = entry?.title || "";
-  $("eMood").value = entry?.mood || "😐 Neutral";
-  $("eTags").value = (entry?.tags || []).join(", ");
-  $("eDate").value = entry?.date || new Date().toISOString().slice(0,10);
-  $("eBody").value = entry?.body || "";
-  $("eImage").value = "";
-  $("imagePreview").classList.toggle("hidden", !editingImageB64);
-  if(editingImageB64) $("imagePreview").src = editingImageB64;
-
-  updatePreview();
-  $("editorBackdrop").style.display = "flex";
-  $("eTitle").focus();
-}
-
-function closeEditor(){
-  $("editorBackdrop").style.display = "none";
-  editingId = null;
-  editingImageB64 = null;
-}
-
-function openAbout(){ $("aboutBackdrop").style.display = "flex"; }
-function closeAbout(){ $("aboutBackdrop").style.display = "none"; }
-
-function basicMarkdownToHtml(text){
-  let t = escapeHtml(text);
-  t = t.replace(/^###\s(.+)$/gm, "<h3>$1</h3>");
-  t = t.replace(/^##\s(.+)$/gm, "<h2>$1</h2>");
-  t = t.replace(/^#\s(.+)$/gm, "<h1>$1</h1>");
-  t = t.replace(/^>\s(.+)$/gm, "<blockquote>$1</blockquote>");
-  t = t.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
-  t = t.replace(/`([^`]+)`/g, "<code>$1</code>");
-  t = t.replace(/\n/g, "<br>");
-  return t;
-}
-
-function updatePreview(){
-  const body = $("eBody").value || "";
-  $("preview").innerHTML = body.trim() ? basicMarkdownToHtml(body) : "Start typing to see preview…";
-}
-
-$("eBody").addEventListener("input", updatePreview);
-
-function loadEntryImage(e){
-  const file = e.target.files && e.target.files[0];
-  if(!file) return;
-
-  if(file.size > 1_000_000){
-    e.target.value = "";
-    return toast("warn","Image too large","Choose an image under ~1MB.");
-  }
-  const reader = new FileReader();
-  reader.onload = () => {
-    editingImageB64 = reader.result;
-    $("imagePreview").src = editingImageB64;
-    $("imagePreview").classList.remove("hidden");
-    toast("", "Attached", "Image added to this entry.");
-  };
-  reader.readAsDataURL(file);
-}
-
-async function saveFromEditor(){
-  const title = ($("eTitle").value || "").trim();
-  const mood  = $("eMood").value;
-  const date  = $("eDate").value || new Date().toISOString().slice(0,10);
-  const tags  = ($("eTags").value || "").split(",").map(t => t.trim()).filter(Boolean).map(t => t.toLowerCase());
-  const body  = ($("eBody").value || "").trim();
-
-  if(!title && !body) return toast("warn","Empty entry","Add a title or body.");
-  const inline = extractInlineTags(body);
-  const mergedTags = Array.from(new Set([...tags, ...inline]));
-
-  const vault = await openVault();
-  vault.posts = Array.isArray(vault.posts) ? vault.posts : [];
-
-  if(editingId){
-    const idx = vault.posts.findIndex(p => p.id === editingId);
-    if(idx === -1) return toast("danger","Missing entry","Could not find entry to edit.");
-    const prev = normalizeEntry(vault.posts[idx]);
-    vault.posts[idx] = normalizeEntry({
-      ...prev,
-      title, mood, date,
-      tags: mergedTags,
-      body,
-      image: editingImageB64 || null,
-      editedAt: new Date().toISOString()
-    });
-    toast("", "Updated", "Entry saved.");
-  } else {
-    vault.posts.push(normalizeEntry({
-      title, mood, date, tags: mergedTags, body, image: editingImageB64 || null
-    }));
-    toast("", "Saved", "New entry added.");
-  }
-
-  await saveVault(vault);
-  closeEditor();
-  await refreshAll();
-}
-
-/* ---------- Diary render ---------- */
 async function renderDiary(){
   const vault = await openVault();
   const posts = (vault.posts || []).map(normalizeEntry);
-
-  const term = ($("diarySearch").value || "").trim().toLowerCase();
-  const sortMode = $("sortMode").value;
-  const dateFilter = $("dateFilter").value;
-  const moodFilter = $("moodFilter").value;
-
-  posts.sort((a,b) => sortMode === "oldest"
-    ? new Date(a.createdAt) - new Date(b.createdAt)
-    : new Date(b.createdAt) - new Date(a.createdAt)
-  );
-
-  const filtered = posts.filter(p => {
-    const hay = (p.title + " " + p.body + " " + (p.tags || []).join(" ")).toLowerCase();
-    const okTerm = !term || hay.includes(term);
-    const okDate = !dateFilter || p.date === dateFilter;
-    const okMood = !moodFilter || p.mood === moodFilter;
-    return okTerm && okDate && okMood;
-  });
-
-  $("entryCount").innerText = `${posts.length} entries`;
-
-  if(filtered.length === 0){
-    $("diaryContainer").innerHTML = `<div class="card empty">No matching entries found.</div>`;
-    return;
-  }
-
-  $("diaryContainer").innerHTML = filtered.map(p => {
-    const tags = (p.tags || []).slice(0, 8).map(t => `<span class="chip"><i class="fas fa-hashtag"></i> ${escapeHtml(t)}</span>`).join("");
-    const meta = `${escapeHtml(p.date)} • ${escapeHtml(p.mood)}${p.editedAt ? " • edited" : ""}`;
-    const img = p.image ? `<img class="thumb" src="${p.image}" alt="attachment">` : "";
-    return `
-      <div class="card">
-        <div class="entry">
-          <div style="flex:1;">
-            <small>${meta}</small>
-            ${p.title ? `<h4>${escapeHtml(p.title)}</h4>` : ""}
-            <p>${escapeHtml(p.body)}</p>
-            ${img}
-            <div class="chips">${tags}</div>
-          </div>
-          <div class="entry-actions">
-            <button class="iconbtn" title="Share with Friend" onclick='shareToFriend("${p.id}")'>
-                <i class="fas fa-paper-plane"></i>
-            </button>
-            <button class="iconbtn" title="Edit" onclick='editEntry("${p.id}")'><i class="fas fa-pen"></i></button>
-            <button class="iconbtn danger" title="Delete" onclick='deleteEntry("${p.id}")'><i class="fas fa-trash"></i></button>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join("");
+  const term = (document.getElementById("diarySearch").value || "").toLowerCase();
+  const sortMode = document.getElementById("sortMode").value;
+  const dateFilter = document.getElementById("dateFilter").value;
+  const moodFilter = document.getElementById("moodFilter").value;
+  posts.sort((a,b) => sortMode === "oldest" ? new Date(a.createdAt) - new Date(b.createdAt) : new Date(b.createdAt) - new Date(a.createdAt));
+  const filtered = posts.filter(p => { const hay = (p.title + " " + p.body + " " + (p.tags || []).join(" ")).toLowerCase(); return (!term || hay.includes(term)) && (!dateFilter || p.date === dateFilter) && (!moodFilter || p.mood === moodFilter); });
+  document.getElementById("entryCount").innerText = `${posts.length} entries`;
+  if(filtered.length === 0){ document.getElementById("diaryContainer").innerHTML = "<div class='card empty'>No matching entries found.</div>"; return; }
+  document.getElementById("diaryContainer").innerHTML = filtered.map(p => { const tags = (p.tags || []).slice(0,8).map(t => `<span class='chip'>#${escapeHtml(t)}</span>`).join(""); const meta = `${escapeHtml(p.date)} • ${escapeHtml(p.mood)}${p.editedAt ? " • edited" : ""}`; const img = p.image ? `<img class='thumb' src='${p.image}'>` : ""; return `<div class='card'><div class='entry'><div><small>${meta}</small>${p.title ? `<h4>${escapeHtml(p.title)}</h4>` : ""}<p>${escapeHtml(p.body)}</p>${img}<div class='chips'>${tags}</div></div><div class='entry-actions'><button class='iconbtn' onclick='shareToFriend("${p.id}")'><i class='fas fa-share'></i></button><button class='iconbtn' onclick='editEntry("${p.id}")'><i class='fas fa-edit'></i></button><button class='iconbtn' onclick='deleteEntry("${p.id}")'><i class='fas fa-trash'></i></button></div></div></div>`; }).join("");
 }
 
-async function editEntry(id){
-  const vault = await openVault();
-  const posts = (vault.posts || []).map(normalizeEntry);
-  const entry = posts.find(p => p.id === id);
-  if(!entry) return toast("danger","Missing entry","Could not find that entry.");
-  openEditor(entry);
-}
-
-async function deleteEntry(id){
-  if(!confirm("Delete this entry?")) return;
-  const vault = await openVault();
-  vault.posts = (vault.posts || []).filter(p => p.id !== id);
+async function quickSave(){
+  let title = document.getElementById("quickTitle").value, mood = document.getElementById("quickMood").value, tags = document.getElementById("quickTags").value.split(",").map(t=>t.trim()).filter(Boolean), body = document.getElementById("quickBody").value;
+  if(!body && !title) return toast("danger","Empty","Write something");
+  let vault = await openVault();
+  vault.posts = vault.posts || [];
+  vault.posts.push(normalizeEntry({ title, mood, tags, body, date: new Date().toISOString().slice(0,10), createdAt: new Date().toISOString(), image: null }));
   await saveVault(vault);
-  toast("", "Deleted", "Entry removed.");
-  await refreshAll();
+  document.getElementById("quickTitle").value = ""; document.getElementById("quickTags").value = ""; document.getElementById("quickBody").value = "";
+  toast("","Saved","Entry added");
+  await renderDiary();
 }
 
-/* ---------- Stats ---------- */
+let editingId = null, editingImage = null;
+function openEditor(entry=null){
+  editingId = entry?.id || null; editingImage = entry?.image || null;
+  document.getElementById("editorTitle").innerText = editingId ? "Edit Entry" : "New Entry";
+  document.getElementById("eTitle").value = entry?.title || "";
+  document.getElementById("eMood").value = entry?.mood || "😐 Neutral";
+  document.getElementById("eTags").value = (entry?.tags || []).join(", ");
+  document.getElementById("eDate").value = entry?.date || new Date().toISOString().slice(0,10);
+  document.getElementById("eBody").value = entry?.body || "";
+  document.getElementById("imagePreview").classList.toggle("hidden", !editingImage);
+  if(editingImage) document.getElementById("imagePreview").src = editingImage;
+  document.getElementById("editorBackdrop").style.display = "flex";
+  updatePreview();
+}
+function closeEditor(){ document.getElementById("editorBackdrop").style.display = "none"; editingId = null; editingImage = null; }
+function updatePreview(){ document.getElementById("preview").innerHTML = (document.getElementById("eBody").value || "").replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/\n/g,"<br>") || "Preview..."; }
+document.getElementById("eBody").addEventListener("input", updatePreview);
+function loadEntryImage(e){ let f = e.target.files[0]; if(!f) return; let r = new FileReader(); r.onload = () => { editingImage = r.result; document.getElementById("imagePreview").src = editingImage; document.getElementById("imagePreview").classList.remove("hidden"); }; r.readAsDataURL(f); }
+async function saveFromEditor(){
+  let title = document.getElementById("eTitle").value, mood = document.getElementById("eMood").value, tags = document.getElementById("eTags").value.split(",").map(t=>t.trim()).filter(Boolean), date = document.getElementById("eDate").value, body = document.getElementById("eBody").value;
+  if(!title && !body) return toast("danger","Empty","Add content");
+  let vault = await openVault();
+  if(editingId){
+    let idx = vault.posts.findIndex(p => p.id === editingId);
+    if(idx !== -1) vault.posts[idx] = { ...vault.posts[idx], title, mood, tags, date, body, image: editingImage, editedAt: new Date().toISOString() };
+  } else { vault.posts.push(normalizeEntry({ id: uuid(), title, mood, tags, date, body, image: editingImage, createdAt: new Date().toISOString() })); }
+  await saveVault(vault);
+  closeEditor();
+  await renderDiary();
+  toast("","Saved","Entry saved");
+}
+async function editEntry(id){ let vault = await openVault(); let entry = vault.posts.find(p => p.id === id); if(entry) openEditor(entry); }
+async function deleteEntry(id){ if(!confirm("Delete this entry?")) return; let vault = await openVault(); vault.posts = vault.posts.filter(p => p.id !== id); await saveVault(vault); await renderDiary(); toast("","Deleted","Entry removed"); }
+
 async function updateStats(){
-  const me = getUser();
-  if (!me) return;
-  
+  const me = getUser(); if(!me) return;
   const vault = await openVault();
   const posts = (vault.posts || []).map(normalizeEntry);
-  $("kpiTotal").innerText = String(posts.length);
-
+  document.getElementById("kpiTotal").innerText = String(posts.length);
   const dates = new Set(posts.map(p => p.date));
-  let streak = 0;
-  for(let d = new Date(); ; ){
-    const iso = d.toISOString().slice(0,10);
-    if(dates.has(iso)) streak++;
-    else break;
-    d.setDate(d.getDate()-1);
-  }
-  $("kpiStreak").innerText = String(streak);
-
-  const now = new Date();
-  const ym = now.toISOString().slice(0,7);
-  const thisMonth = posts.filter(p => (p.date || "").slice(0,7) === ym).length;
-  $("kpiThisMonth").innerText = String(thisMonth);
-
-  const chartElement = $("chart");
-  if (chartElement) {
-    drawChart(posts);
-  }
+  let streak = 0; for(let d = new Date();;){ let iso = d.toISOString().slice(0,10); if(dates.has(iso)) streak++; else break; d.setDate(d.getDate()-1); }
+  document.getElementById("kpiStreak").innerText = String(streak);
+  const now = new Date(); const ym = now.toISOString().slice(0,7); const thisMonth = posts.filter(p => (p.date || "").slice(0,7) === ym).length;
+  document.getElementById("kpiThisMonth").innerText = String(thisMonth);
+  const chartElement = document.getElementById("chart");
+  if(chartElement) drawChart(posts);
 }
-
 function drawChart(posts){
-  const c = $("chart");
-  if (!c) return;
-  
-  const ctx = c.getContext("2d");
-  if (!ctx) return;
-
+  const c = document.getElementById("chart"); if(!c) return;
+  const ctx = c.getContext("2d"); if(!ctx) return;
   const dpr = window.devicePixelRatio || 1;
-  const cssW = c.clientWidth || 600;
-  const cssH = c.clientHeight || 160;
-  c.width = Math.floor(cssW * dpr);
-  c.height = Math.floor(cssH * dpr);
+  const cssW = c.clientWidth || 600, cssH = c.clientHeight || 160;
+  c.width = Math.floor(cssW * dpr); c.height = Math.floor(cssH * dpr);
   ctx.scale(dpr, dpr);
-
-  const now = new Date();
-  const labels = [];
-  const counts = [];
-  for(let i=11;i>=0;i--){
-    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    const key = d.toISOString().slice(0,7);
-    labels.push(key);
-    counts.push(posts.filter(p => (p.date || "").slice(0,7) === key).length);
-  }
-
+  const now = new Date(); const counts = [];
+  for(let i=11;i>=0;i--){ const d = new Date(now.getFullYear(), now.getMonth()-i, 1); const key = d.toISOString().slice(0,7); counts.push(posts.filter(p => (p.date || "").slice(0,7) === key).length); }
   const W = cssW, H = cssH;
   ctx.clearRect(0,0,W,H);
-
-  const pad = 18;
-  const max = Math.max(1, ...counts);
-  const barW = (W - pad*2) / counts.length;
-
+  const pad = 18, max = Math.max(1, ...counts), barW = (W - pad*2) / counts.length;
   ctx.globalAlpha = 0.25;
   ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--border") || "#ccc";
-  for(let i=0;i<=4;i++){
-    const y = pad + (H - pad*2) * (i/4);
-    ctx.beginPath();
-    ctx.moveTo(pad, y);
-    ctx.lineTo(W-pad, y);
-    ctx.stroke();
-  }
+  for(let i=0;i<=4;i++){ const y = pad + (H - pad*2) * (i/4); ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W-pad, y); ctx.stroke(); }
   ctx.globalAlpha = 1;
-
   for(let i=0;i<counts.length;i++){
-    const v = counts[i];
-    const bh = (H - pad*2) * (v / max);
-    const x = pad + i*barW + 6;
-    const y = H - pad - bh;
-    const bw = Math.max(6, barW - 12);
-
+    const v = counts[i], bh = (H - pad*2) * (v / max), x = pad + i*barW + 6, y = H - pad - bh, bw = Math.max(6, barW - 12);
     const primary = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() || "#10b981";
-    ctx.fillStyle = hexToRgba(primary, 0.6);
-    ctx.fillRect(x, y, bw, bh);
-
-    ctx.fillStyle = hexToRgba(primary, 0.95);
-    ctx.fillRect(x, y+bh-3, bw, 3);
+    ctx.fillStyle = hexToRgba(primary, 0.6); ctx.fillRect(x, y, bw, bh);
+    ctx.fillStyle = hexToRgba(primary, 0.95); ctx.fillRect(x, y+bh-3, bw, 3);
   }
-
   ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--muted") || "#64748b";
   ctx.font = "12px system-ui";
-  const showIdx = new Set([0, 5, 11]);
-  labels.forEach((lab,i)=>{
-    if(!showIdx.has(i)) return;
-    const x = pad + i*barW + 6;
-    ctx.fillText(lab, x, H - 4);
-  });
+  const showIdx = new Set([0,5,11]);
+  const labels = []; for(let i=11;i>=0;i--){ const d = new Date(now.getFullYear(), now.getMonth()-i, 1); labels.push(d.toISOString().slice(0,7)); }
+  labels.forEach((lab,i)=>{ if(!showIdx.has(i)) return; const x = pad + i*barW + 6; ctx.fillText(lab, x, H - 4); });
 }
+function hexToRgba(hex,a){ const h = hex.replace("#","").trim(); const full = h.length===3 ? h.split("").map(c=>c+c).join("") : h.padEnd(6,"0").slice(0,6); const r = parseInt(full.slice(0,2),16); const g = parseInt(full.slice(2,4),16); const b = parseInt(full.slice(4,6),16); return `rgba(${r},${g},${b},${a})`; }
 
-function hexToRgba(hex, a){
-  const h = hex.replace("#","").trim();
-  const full = h.length===3 ? h.split("").map(c=>c+c).join("") : h.padEnd(6,"0").slice(0,6);
-  const r = parseInt(full.slice(0,2),16);
-  const g = parseInt(full.slice(2,4),16);
-  const b = parseInt(full.slice(4,6),16);
-  return `rgba(${r},${g},${b},${a})`;
-}
+async function refreshAll(){ await renderDiary(); await updateStats(); }
 
-/* ---------- Profile photo ---------- */
 function uploadPhoto(e){
-  const file = e.target.files && e.target.files[0];
-  if(!file) return;
-  if(file.size > 2_000_000){
-    e.target.value = "";
-    return toast("warn","Too large","Please choose an image under 2MB.");
-  }
+  const file = e.target.files[0]; if(!file) return;
+  if(file.size > 2000000){ e.target.value = ""; return toast("warn","Too large","Image under 2MB."); }
   const reader = new FileReader();
-  reader.onload = () => {
-    const me = getUser();
-    if(!me) return;
-    me.photo = reader.result;
-    upsertUser(me);
-    hydrateUserUI();
-    toast("", "Updated", "Profile photo updated.");
-    e.target.value = "";
-  };
+  reader.onload = () => { const me = getUser(); if(!me) return; me.photo = reader.result; upsertUser(me); hydrateUserUI(); toast("","Updated","Profile photo updated."); e.target.value = ""; };
   reader.readAsDataURL(file);
 }
+function resetPhoto(){ const me = getUser(); if(!me) return; me.photo = null; upsertUser(me); hydrateUserUI(); toast("","Reset","Profile photo reset."); }
+async function exportData(){ const me = getUser(); if(!me) return; const blob = new Blob([JSON.stringify(me)], {type:"application/json"}); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "journal-backup.json"; a.click(); }
+async function importData(e){ const file = e.target.files[0]; if(!file) return; const r = new FileReader(); r.onload = async() => { try{ const data = JSON.parse(r.result); setCurrentUser(data); await loadUserData(); toast("","Imported","Restart to apply"); location.reload(); } catch(e){ toast("danger","Invalid file","Could not import"); } }; r.readAsText(file); }
+async function wipeMyData(){ if(!confirm("Delete ALL your data?")) return; const me = getUser(); if(me) await fetch(`${API_URL}/api/user/update`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email:me.email, encryptedVault:{iv:"",data:""}})}); localStorage.clear(); logout(); }
 
-function resetPhoto(){
-  const me = getUser();
-  if(!me) return;
-  me.photo = null;
-  upsertUser(me);
-  hydrateUserUI();
-  toast("", "Reset", "Profile photo reset.");
-}
+document.addEventListener("keydown", (e) => { if(e.ctrlKey && e.key.toLowerCase() === "k"){ e.preventDefault(); if(document.getElementById("app").style.display !== "none") openEditor(); } if(e.key === "Escape" && document.getElementById("editorBackdrop").style.display === "flex") closeEditor(); });
 
-/* ---------- Export / Import ---------- */
-async function exportData(){
-  const me = getUser();
-  if(!me) return;
+// ========== FRIENDS SYSTEM ==========
 
-  const payload = {
-    exportedAt: new Date().toISOString(),
-    app: "My Life Journal",
-    user: {
-      id: me.id, name: me.name, email: me.email,
-      kdfSalt: me.kdfSalt,
-      passHash: me.passHash,
-      pinSalt: me.pinSalt,
-      pinHash: me.pinHash,
-      photo: me.photo || null,
-      vault: me.vault || {iv:"",data:""}
-    }
-  };
-
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `journal_backup_${(me.name || "user").replaceAll(" ","_")}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-
-  toast("", "Exported", "Encrypted backup downloaded.");
-}
-
-function importData(event){
-  const file = event.target.files && event.target.files[0];
-  if(!file) return;
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    try{
-      const data = JSON.parse(reader.result);
-      if(!data?.user?.email || !data.user.vault) throw new Error("Invalid file");
-
-      const users = readUsers();
-      const incoming = data.user;
-      const idx = users.findIndex(u => u.email === String(incoming.email).toLowerCase());
-
-      const imported = {
-        id: incoming.id || uuid(),
-        name: incoming.name || "User",
-        email: String(incoming.email).toLowerCase(),
-        kdfSalt: incoming.kdfSalt,
-        passHash: incoming.passHash,
-        pinSalt: incoming.pinSalt,
-        pinHash: incoming.pinHash,
-        photo: incoming.photo || null,
-        vault: incoming.vault,
-        failed: 0,
-        lockUntil: 0
-      };
-
-      if(idx !== -1) users[idx] = imported;
-      else users.push(imported);
-
-      writeUsers(users);
-      toast("", "Imported", "Backup restored. Log in using the same password + PIN from that backup.");
-    }catch(err){
-      toast("danger","Import failed","That file doesn't look like a Journal backup.");
-    } finally {
-      event.target.value = "";
-    }
-  };
-  reader.readAsText(file);
-}
-
-/* ---------- Wipe ---------- */
-async function wipeMyData(){
-  const me = getUser();
-  if(!me) return;
-  if(!confirm("This will delete your account + encrypted diary. Continue?")) return;
-
-  let users = readUsers();
-  users = users.filter(u => u.email !== me.email);
-  writeUsers(users);
-  localStorage.removeItem(LS_CURRENT);
-  toast("", "Deleted", "Your data was removed.");
-  logout(false);
-}
-
-/* ---------- Logout ---------- */
-function logout(showToast){
-  if(showToast) toast("", "Logged out", "See you next time!");
-  sessionPassword = "";
-  localStorage.removeItem(LS_CURRENT);
-  location.reload();
-}
-
-/* ---------- Refresh ---------- */
-async function refreshAll(){
-  await renderDiary();
-  await updateStats();
-}
-
-/* ---------- Keyboard shortcuts ---------- */
-document.addEventListener("keydown", (e) => {
-  if(e.ctrlKey && e.key.toLowerCase() === "k"){
-    const inApp = $("app").style.display !== "none";
-    if(inApp){
-      e.preventDefault();
-      openEditor();
-    }
-  }
-  if($("editorBackdrop").style.display === "flex"){
-    if(e.key === "Escape"){
-      e.preventDefault();
-      closeEditor();
-    }
-    if(e.ctrlKey && e.key === "Enter"){
-      e.preventDefault();
-      saveFromEditor();
-    }
-  }
-});
-
-/* ========== FRIENDS SYSTEM - BACKEND VERSION ========== */
-
-// Send friend request (uses backend)
-window.addFriendAction = async function() {
+window.addFriendAction = async function(){
   const emailInput = document.getElementById("friendEmail");
   const targetEmail = emailInput.value.trim().toLowerCase();
   const currentUser = readCurrent();
-  
-  if (!targetEmail) return toast("danger", "Error", "Please enter an email.");
-  if (targetEmail === currentUser.email.toLowerCase()) return toast("danger", "Error", "You cannot add yourself.");
-  
-  try {
-    const response = await fetch(`${API_URL}/api/friends/request`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userEmail: currentUser.email, friendEmail: targetEmail })
-    });
-    
+  if(!targetEmail) return toast("danger","Error","Enter email");
+  if(targetEmail === currentUser.email.toLowerCase()) return toast("danger","Error","Cannot add yourself");
+  try{
+    const response = await fetch(`${API_URL}/api/friends/request`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({userEmail:currentUser.email, friendEmail:targetEmail})});
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error);
-    
-    toast("success", "Sent", "Friend request sent!");
+    if(!response.ok) throw new Error(data.error);
+    toast("success","Sent","Friend request sent");
     emailInput.value = "";
     checkIncomingRequests();
-    
-  } catch (error) {
-    toast("danger", "Error", error.message);
-  }
+  } catch(e){ toast("danger","Error",e.message); }
 };
 
-// Check incoming requests (from backend)
-window.checkIncomingRequests = async function() {
+window.checkIncomingRequests = async function(){
   const currentUser = readCurrent();
-  if (!currentUser) return;
-  
-  try {
-    const response = await fetch(`${API_URL}/api/friends/requests`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userEmail: currentUser.email })
-    });
-    
+  if(!currentUser) return;
+  try{
+    const response = await fetch(`${API_URL}/api/friends/requests`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({userEmail:currentUser.email})});
     const data = await response.json();
     const container = document.getElementById("pendingRequests");
-    if (!container) return;
-    
+    if(!container) return;
     const requests = data.requests || [];
-    
-    if (requests.length === 0) {
-      container.innerHTML = '<p class="muted" style="text-align:center; padding:10px;">No pending requests.</p>';
-      return;
-    }
-    
-    container.innerHTML = requests.map(req => `
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;">
-        <span><strong>${escapeHtml(req.from?.email || req.fromEmail)}</strong></span>
-        <button class="btn-inline" onclick="acceptFriendRequest('${req._id}')"><i class="fas fa-check"></i> Accept</button>
-      </div>
-    `).join('');
-    
-  } catch (error) {
-    console.error("Check requests error:", error);
-  }
+    if(requests.length === 0){ container.innerHTML = '<p class="muted" style="text-align:center; padding:10px;">No pending requests.</p>'; return; }
+    container.innerHTML = requests.map(req => `<div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid var(--border);"><span><strong>${escapeHtml(req.from?.email || req.fromEmail)}</strong></span><button class="btn-inline" onclick='acceptFriendRequest("${req._id}")'>Accept</button></div>`).join('');
+  } catch(e){ console.error(e); }
 };
 
-// Accept friend request (uses backend)
-window.acceptFriendRequest = async function(requestId) {
+window.acceptFriendRequest = async function(requestId){
   const currentUser = readCurrent();
-  
-  try {
-    const response = await fetch(`${API_URL}/api/friends/accept`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userEmail: currentUser.email, requestId: requestId })
-    });
-    
+  try{
+    const response = await fetch(`${API_URL}/api/friends/accept`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({userEmail:currentUser.email, requestId:requestId})});
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error);
-    
-    toast("success", "Accepted", "You are now friends!");
-    
+    if(!response.ok) throw new Error(data.error);
+    toast("success","Accepted","Friend added!");
     checkIncomingRequests();
     loadFriendsList();
-    
-  } catch (error) {
-    toast("danger", "Error", error.message);
-  }
+  } catch(e){ toast("danger","Error",e.message); }
 };
 
-// UNFRIEND FUNCTION - removes friend from both users
-window.unfriendFriend = async function(friendId, friendEmail) {
-  if (!confirm(`Are you sure you want to unfriend ${friendEmail}?`)) return;
-  
+window.unfriendFriend = async function(friendId, friendEmail){
+  if(!confirm(`Are you sure you want to unfriend ${friendEmail}?`)) return;
   const currentUser = readCurrent();
-  
-  try {
-    const response = await fetch(`${API_URL}/api/friends/unfriend`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        userEmail: currentUser.email, 
-        friendId: friendId,
-        friendEmail: friendEmail 
-      })
-    });
-    
+  try{
+    const response = await fetch(`${API_URL}/api/friends/unfriend`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({userEmail:currentUser.email, friendId:friendId, friendEmail:friendEmail})});
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error);
-    
-    toast("success", "Unfriended", `${friendEmail} has been removed from your friends list`);
-    
-    // Refresh the friends list
+    if(!response.ok) throw new Error(data.error);
+    toast("success","Unfriended",`${friendEmail} removed`);
     loadFriendsList();
-    
-  } catch (error) {
-    toast("danger", "Error", error.message);
-  }
+  } catch(e){ toast("danger","Error",e.message); }
 };
 
-// Load friends list (with Unfriend button)
-window.loadFriendsList = async function() {
+window.loadFriendsList = async function(){
   const currentUser = readCurrent();
-  if (!currentUser) return;
-  
-  try {
-    const response = await fetch(`${API_URL}/api/friends/list`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userEmail: currentUser.email })
-    });
-    
+  if(!currentUser) return;
+  try{
+    const response = await fetch(`${API_URL}/api/friends/list`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({userEmail:currentUser.email})});
     const data = await response.json();
     const container = document.getElementById("confirmedFriendsList");
-    if (!container) return;
-    
+    if(!container) return;
     const friends = data.friends || [];
-    
-    if (friends.length === 0) {
-      container.innerHTML = '<p class="muted" style="text-align:center; padding:10px;">No friends added yet.</p>';
-      return;
-    }
-    
-    container.innerHTML = friends.map(friend => `
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; border-bottom: 1px solid var(--border);">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="width: 35px; height: 35px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-            ${friend.name ? friend.name.charAt(0).toUpperCase() : friend.email.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <div style="font-weight: 500;">${escapeHtml(friend.name || friend.email)}</div>
-            <div style="font-size: 0.8rem; color: var(--muted);">${escapeHtml(friend.email)}</div>
-          </div>
-        </div>
-        <button class="btn-ghost" style="background: #ef4444; color: white; padding: 6px 12px;" onclick='unfriendFriend("${friend._id}", "${escapeHtml(friend.email)}")'>
-          <i class="fas fa-user-minus"></i> Unfriend
-        </button>
-      </div>
-    `).join('');
-    
-  } catch (error) {
-    console.error("Load friends error:", error);
-  }
+    if(friends.length === 0){ container.innerHTML = '<p class="muted" style="text-align:center; padding:10px;">No friends added yet.</p>'; return; }
+    container.innerHTML = friends.map(friend => `<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px; border-bottom:1px solid var(--border);"><div style="display:flex; align-items:center; gap:12px;"><div style="width:35px; height:35px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:bold;">${friend.name ? friend.name.charAt(0).toUpperCase() : friend.email.charAt(0).toUpperCase()}</div><div><div style="font-weight:500;">${escapeHtml(friend.name || friend.email)}</div><div style="font-size:0.8rem; color:var(--muted);">${escapeHtml(friend.email)}</div></div></div><button class="btn-ghost" style="background:#ef4444; color:white; padding:6px 12px;" onclick='unfriendFriend("${friend._id}", "${escapeHtml(friend.email)}")'><i class="fas fa-user-minus"></i> Unfriend</button></div>`).join('');
+  } catch(e){ console.error(e); }
 };
 
-// Share to friend (uses backend)
-window.shareToFriend = async function(postId) {
-  const friendEmail = prompt("Enter your friend's email to share this entry:");
-  if (!friendEmail) return;
-  
+window.shareToFriend = async function(postId){
+  const friendEmail = prompt("Enter friend's email:");
+  if(!friendEmail) return;
   const vault = await openVault();
   const entry = vault.posts.find(p => p.id === postId);
-  if (!entry) return toast("danger", "Error", "Entry not found.");
-  
+  if(!entry) return toast("danger","Error","Entry not found");
   const currentUser = readCurrent();
-  
-  try {
-    const response = await fetch(`${API_URL}/api/share`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fromEmail: currentUser.email,
-        toEmail: friendEmail,
-        title: entry.title,
-        body: entry.body,
-        mood: entry.mood,
-        date: entry.date,
-        image: entry.image || null,
-        tags: entry.tags || []
-      })
-    });
-    
+  try{
+    const response = await fetch(`${API_URL}/api/share`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({fromEmail:currentUser.email, toEmail:friendEmail, title:entry.title, body:entry.body, mood:entry.mood, date:entry.date, image:entry.image||null, tags:entry.tags||[]})});
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error);
-    
-    toast("success", "Shared!", `Entry sent to ${friendEmail}`);
-    
-  } catch (error) {
-    toast("danger", "Error", error.message);
-  }
+    if(!response.ok) throw new Error(data.error);
+    toast("success","Shared","Entry shared!");
+  } catch(e){ toast("danger","Error",e.message); }
 };
 
-// Load shared inbox (from backend)
-window.loadSharedInbox = async function() {
+window.loadSharedInbox = async function(){
   const currentUser = readCurrent();
-  if (!currentUser) return;
-  
-  try {
-    const response = await fetch(`${API_URL}/api/shared/inbox`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userEmail: currentUser.email })
-    });
-    
+  if(!currentUser) return;
+  try{
+    const response = await fetch(`${API_URL}/api/shared/inbox`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({userEmail:currentUser.email})});
     const data = await response.json();
     const container = document.getElementById("sharedInboxContainer");
-    if (!container) return;
-    
+    if(!container) return;
     const shared = data.shared || [];
-    
-    if (shared.length === 0) {
-      container.innerHTML = '<p class="muted" style="text-align:center; padding:20px;">No entries shared with you yet.</p>';
-      return;
-    }
-    
-    container.innerHTML = shared.map(post => `
-      <div class="card" style="margin-bottom: 10px; border-left: 3px solid var(--primary);">
-        <div style="display:flex; justify-content:space-between;">
-          <small>From: <b>${escapeHtml(post.fromEmail)}</b></small>
-          <small class="muted">${new Date(post.sharedAt).toLocaleDateString()}</small>
-        </div>
-        <h4 style="margin: 8px 0;">${escapeHtml(post.title)}</h4>
-        <p style="font-size: 0.9rem;">${escapeHtml(post.body)}</p>
-        ${post.image ? `<img src="${post.image}" style="width:100px; border-radius:5px; margin-top:5px;"/>` : ''}
-      </div>
-    `).join('');
-    
-  } catch (error) {
-    console.error("Load shared inbox error:", error);
-  }
+    if(shared.length === 0){ container.innerHTML = '<p class="muted" style="text-align:center; padding:20px;">No entries shared with you yet.</p>'; return; }
+    container.innerHTML = shared.map(post => `<div class="card" style="margin-bottom:10px; border-left:3px solid var(--primary);"><div style="display:flex; justify-content:space-between;"><small>From: <b>${escapeHtml(post.fromEmail)}</b></small><small class="muted">${new Date(post.sharedAt).toLocaleDateString()}</small></div><h4 style="margin:8px 0;">${escapeHtml(post.title)}</h4><p>${escapeHtml(post.body)}</p>${post.image ? `<img src="${post.image}" style="width:100px; border-radius:5px; margin-top:5px;">` : ''}</div>`).join('');
+  } catch(e){ console.error(e); }
 };
 
-/* ---------- Boot ---------- */
 window.addEventListener("load", async () => {
-    generateCaptcha();
-    toggleMode("login");
-
-    const cur = readCurrent();
-    if(cur?.email){
-        $("email").value = cur.email;
-        toast("warn","Session found","Enter password + PIN to unlock.");
-    }
+  generateCaptcha();
+  toggleMode("login");
+  const cur = readCurrent();
+  if(cur?.email){ document.getElementById("email").value = cur.email; toast("warn","Session found","Enter password + PIN to unlock."); }
 });
-</script>
+  </script>
 </body>
 </html>
