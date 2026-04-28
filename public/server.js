@@ -14,12 +14,22 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, "public")));
 
-// MongoDB Connection
-const MONGO_URL = "mongodb+srv://Archie:Archie1225@cluster0.7e4s845.mongodb.net/myjournal?retryWrites=true&w=majority";
+// MongoDB Connection with better error handling
+const MONGO_URL = process.env.MONGO_URL;
+if (!MONGO_URL) {
+  console.error("❌ MONGO_URL environment variable is not set!");
+  process.exit(1);
+}
 
-mongoose.connect(MONGO_URL)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.error("❌ MongoDB connection error:", err));
+mongoose.connect(MONGO_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("✅ MongoDB Connected"))
+.catch(err => {
+  console.error("❌ MongoDB connection error:", err.message);
+  process.exit(1);
+});
 
 // ==================== SCHEMAS ====================
 
@@ -97,13 +107,11 @@ app.post("/api/signup", async (req, res) => {
   try {
     const { name, email, password, pin } = req.body;
     
-    // Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: "Email already registered" });
     }
     
-    // Hash password and PIN
     const passwordHash = await bcrypt.hash(password, 10);
     const pinHash = await bcrypt.hash(pin, 10);
     
@@ -118,7 +126,6 @@ app.post("/api/signup", async (req, res) => {
     
     await user.save();
     
-    // Generate token
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET || "your-secret-key-change-this",
@@ -157,7 +164,6 @@ app.post("/api/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
     
-    // Update online status
     user.onlineStatus = "online";
     user.lastSeen = new Date();
     await user.save();
@@ -200,13 +206,11 @@ app.post("/api/friends/request", authenticateToken, async (req, res) => {
       return res.status(400).json({ error: "Cannot send friend request to yourself" });
     }
     
-    // Check if already friends
     const fromUser = await User.findById(fromUserId);
     if (fromUser.friends.includes(toUser._id)) {
       return res.status(400).json({ error: "Already friends with this user" });
     }
     
-    // Check if request already exists
     const existingRequest = await FriendRequest.findOne({
       fromUser: fromUserId,
       toUser: toUser._id,
@@ -268,7 +272,6 @@ app.post("/api/friends/accept", authenticateToken, async (req, res) => {
     request.status = "accepted";
     await request.save();
     
-    // Add to each other's friends list
     await User.findByIdAndUpdate(request.fromUser, {
       $addToSet: { friends: request.toUser }
     });
@@ -298,7 +301,6 @@ app.post("/api/friends/unfriend", authenticateToken, async (req, res) => {
       $pull: { friends: userId }
     });
     
-    // Also remove any accepted friend requests
     await FriendRequest.deleteMany({
       $or: [
         { fromUser: userId, toUser: friendId, status: "accepted" },
@@ -407,12 +409,25 @@ app.get("/api/shared/inbox", authenticateToken, async (req, res) => {
   }
 });
 
+// ==================== HEALTH CHECK ====================
+
+app.get("/health", (req, res) => {
+  res.json({ status: "healthy", timestamp: new Date().toISOString() });
+});
+
 // ==================== SERVE FRONTEND ====================
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: "Something went wrong!" });
+});
+
+// Start server
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📱 Open http://localhost:${PORT}`);
