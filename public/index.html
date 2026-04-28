@@ -568,6 +568,31 @@ html {
         transform: translateX(0);
     }
 }
+
+/* Theme and About buttons */
+.pillbtn {
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: rgba(16, 185, 129, 0.85);
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.pillbtn:hover {
+  background: rgba(16, 185, 129, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.pillbtn i {
+  margin-right: 6px;
+}
   </style>
 </head>
 
@@ -575,15 +600,15 @@ html {
   <div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
 
   <!-- AUTH -->
- <section id="authSection" class="auth">
-  <div style="position:absolute; top:16px; right:16px; display:flex; gap:10px; z-index:100;">
-    <button class="pillbtn" type="button" onclick="window.toggleTheme()">
-      <i class="fas fa-moon"></i> Theme
-    </button>
-    <button class="pillbtn" type="button" onclick="window.openAbout()">
-      <i class="fas fa-circle-info"></i> About
-    </button>
-  </div>
+  <section id="authSection" class="auth">
+    <div style="position:absolute; top:20px; right:20px; display:flex; gap:12px; z-index:100;">
+      <button class="pillbtn" type="button" onclick="toggleTheme()">
+        <i class="fas fa-moon"></i> Theme
+      </button>
+      <button class="pillbtn" type="button" onclick="openAbout()">
+        <i class="fas fa-circle-info"></i> About
+      </button>
+    </div>
 
     <div class="auth-card" role="dialog" aria-label="Authentication">
       <div class="brand">
@@ -726,7 +751,7 @@ html {
 
           <button class="btn-ghost" type="button" onclick="openAbout()" title="Toggle about">
             <i class="fas fa-circle-info"></i> About
-            </button>
+          </button>
 
           <div class="pill" title="Current user">
             <img id="topAvatar" alt="avatar" src="https://ui-avatars.com/api/?background=10b981&color=fff&name=User">
@@ -1045,7 +1070,7 @@ html {
       </div>
       <div class="modal-body">
         <div class="card notice" style="margin:0;">
-          <div style="font-weight:950; margin-bottom:6px;">What is this?</div>
+          <div style="font-weight:950; margin-bottom:6px;">What this is</div>
           <div class="muted" style="line-height:1.5;">
             A Journal that you can use through Internet, you don't need papers and pen
             or even a book to write or put your thoughts about your life story.
@@ -1059,17 +1084,17 @@ html {
             <div class="member">
               <a href="https://www.facebook.com/carlonuyda7" target="_blank">
                 <img src="/Team/Carlo.jpg" Alt="Carlo"></a>
-              <p1> Carlo Nuyda</p1>
+              <p1>Carlo Nuyda</p1>
             </div>
             <div class="member">
               <a href="https://www.facebook.com/yurievillacorte" target="_blank">
                 <img src="/Team/Yurie.jpg" Alt="Yurie"></a>
-              <p1> Yurie Villacorte</p1>
+              <p1>Yurie Villacorte</p1>
             </div>
             <div class="member">
               <a href="https://www.facebook.com/archie.jhon.gregorio" target="_blank">
                 <img src="/Team/Archie.jpg" Alt="Archie"></a>
-              <p1> Archie Jhon Gregorio</p1>
+              <p1>Archie Jhon Gregorio</p1>
             </div>
             <div class="member">
               <a href="https://www.facebook.com/kyle.serapia.507" target="_blank">
@@ -1147,10 +1172,20 @@ html {
       localStorage.setItem("journal_theme", theme);
     }
 
-    function toggleTheme() {
+    window.toggleTheme = function() {
       const cur = localStorage.getItem("journal_theme") || "light";
       applyTheme(cur === "light" ? "dark" : "light");
-    }
+    };
+
+    window.openAbout = function() {
+      const aboutModal = document.getElementById("aboutBackdrop");
+      if (aboutModal) aboutModal.style.display = "flex";
+    };
+
+    window.closeAbout = function() {
+      const aboutModal = document.getElementById("aboutBackdrop");
+      if (aboutModal) aboutModal.style.display = "none";
+    };
 
     (function initTheme() {
       const saved = localStorage.getItem("journal_theme");
@@ -1289,11 +1324,11 @@ html {
       }
     }
 
-    function toggleOnlineStatus() {
+    window.toggleOnlineStatus = function() {
       const newStatus = currentUser?.onlineStatus !== 'online';
       updateMyOnlineStatus(newStatus);
       toast("", "Status Updated", `You are now ${newStatus ? 'Online' : 'Offline'}`);
-    }
+    };
 
     function startHeartbeat() {
       if (heartbeatInterval) clearInterval(heartbeatInterval);
@@ -1312,7 +1347,7 @@ html {
     }
 
     // Navigation
-    function showView(v) {
+    window.showView = function(v) {
       ["home", "diary", "stats", "friends", "settings"].forEach(id => {
         const el = $("view-" + id);
         if (el) el.classList.add("hidden");
@@ -1332,7 +1367,7 @@ html {
         renderFriendsList();
         renderSharedInbox();
       }
-    }
+    };
 
     function toggleDrawer() {
       const side = $("sidebar");
@@ -1346,9 +1381,6 @@ html {
       $("sidebar").classList.remove("open");
       $("drawerBackdrop").classList.remove("show");
     }
-
-    function openAbout() { $("aboutBackdrop").style.display = "flex"; }
-    function closeAbout() { $("aboutBackdrop").style.display = "none"; }
 
     // ==================== JOURNAL FEATURES ====================
     
@@ -1418,7 +1450,7 @@ html {
       }
     }
 
-    function openEditor(entry = null) {
+    window.openEditor = function(entry = null) {
       editingId = entry?._id || null;
       $("editorTitle").innerText = editingId ? "Edit Entry" : "New Entry";
       $("eTitle").value = entry?.title || "";
@@ -1432,13 +1464,13 @@ html {
       if (editingImageB64) $("imagePreview").src = editingImageB64;
       updatePreview();
       $("editorBackdrop").style.display = "flex";
-    }
+    };
 
-    function closeEditor() {
+    window.closeEditor = function() {
       $("editorBackdrop").style.display = "none";
       editingId = null;
       editingImageB64 = null;
-    }
+    };
 
     function updatePreview() {
       const body = $("eBody").value || "";
@@ -1447,7 +1479,7 @@ html {
     
     $("eBody").addEventListener("input", updatePreview);
 
-    function loadEntryImage(e) {
+    window.loadEntryImage = function(e) {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
       if (file.size > 1000000) {
@@ -1462,9 +1494,9 @@ html {
         toast("", "Attached", "Image added to this entry.");
       };
       reader.readAsDataURL(file);
-    }
+    };
 
-    async function saveFromEditor() {
+    window.saveFromEditor = async function() {
       const title = ($("eTitle").value || "").trim();
       const mood = $("eMood").value;
       const date = $("eDate").value || new Date().toISOString().slice(0, 10);
@@ -1510,7 +1542,7 @@ html {
       } catch (err) {
         toast("danger", "Error", "Could not save entry");
       }
-    }
+    };
 
     async function editEntry(id) {
       try {
@@ -1546,7 +1578,7 @@ html {
       }
     }
 
-    async function quickSave() {
+    window.quickSave = async function() {
       const title = ($("quickTitle").value || "").trim();
       const mood = $("quickMood").value;
       const tags = ($("quickTags").value || "").split(",").map(t => t.trim()).filter(Boolean).map(t => t.toLowerCase());
@@ -1580,9 +1612,9 @@ html {
       } catch (err) {
         toast("danger", "Error", "Could not save entry");
       }
-    }
+    };
 
-    async function shareEntry(entryId) {
+    window.shareEntry = async function(entryId) {
       const friendEmail = prompt("Enter friend's email to share this entry:");
       if (!friendEmail) return;
       
@@ -1604,7 +1636,7 @@ html {
       } catch (err) {
         toast("danger", "Error", "Could not share entry");
       }
-    }
+    };
 
     // Stats
     async function updateStats() {
@@ -1709,7 +1741,7 @@ html {
     }
 
     // Friend System
-    async function addFriendAction() {
+    window.addFriendAction = async function() {
       const emailInput = $("friendEmail");
       const targetEmail = emailInput.value.trim().toLowerCase();
       if (!targetEmail) return toast("danger", "Error", "Please enter an email.");
@@ -1734,7 +1766,7 @@ html {
       } catch (err) {
         toast("danger", "Error", "Could not connect to server");
       }
-    }
+    };
 
     async function checkIncomingRequests() {
       try {
@@ -1759,7 +1791,7 @@ html {
       }
     }
 
-    async function acceptFriend(requestId) {
+    window.acceptFriend = async function(requestId) {
       try {
         const response = await fetch(`${API_URL}/api/friends/accept`, {
           method: "POST",
@@ -1780,9 +1812,9 @@ html {
       } catch (err) {
         toast("danger", "Error", "Could not connect to server");
       }
-    }
+    };
 
-    async function unfriendFriend(friendId, friendEmail) {
+    window.unfriendFriend = async function(friendId, friendEmail) {
       if (!confirm(`Are you sure you want to unfriend ${friendEmail}?`)) return;
       try {
         const response = await fetch(`${API_URL}/api/friends/unfriend`, {
@@ -1803,7 +1835,7 @@ html {
       } catch (err) {
         toast("danger", "Error", "Could not connect to server");
       }
-    }
+    };
 
     async function renderFriendsList() {
       try {
@@ -1880,7 +1912,7 @@ html {
     }
 
     // Profile functions
-    function uploadPhoto(e) {
+    window.uploadPhoto = function(e) {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
       if (file.size > 2000000) {
@@ -1911,13 +1943,13 @@ html {
         e.target.value = "";
       };
       reader.readAsDataURL(file);
-    }
+    };
 
-    function resetPhoto() { toast("info", "Coming Soon", "Photo reset coming soon!"); }
-    function exportData() { toast("info", "Coming Soon", "Export coming soon!"); }
-    function importData(event) { toast("info", "Coming Soon", "Import coming soon!"); }
+    window.resetPhoto = function() { toast("info", "Coming Soon", "Photo reset coming soon!"); };
+    window.exportData = function() { toast("info", "Coming Soon", "Export coming soon!"); };
+    window.importData = function(event) { toast("info", "Coming Soon", "Import coming soon!"); };
     
-    async function wipeMyData() {
+    window.wipeMyData = async function() {
       if (!confirm("WARNING: This will delete ALL your data! This action cannot be undone. Continue?")) return;
       try {
         const response = await fetch(`${API_URL}/api/user/delete`, {
@@ -1932,9 +1964,9 @@ html {
       } catch (err) {
         toast("danger", "Error", "Could not delete account");
       }
-    }
+    };
 
-    function logout(showToast) {
+    window.logout = function(showToast) {
       if (showToast) toast("", "Logged out", "See you next time!");
       stopHeartbeat();
       localStorage.removeItem('authToken');
@@ -1942,17 +1974,17 @@ html {
       currentUser = null;
       authToken = null;
       location.reload();
-    }
+    };
 
-    function toggleRecovery(show) {
+    window.toggleRecovery = function(show) {
       $("loginFormContainer").classList.toggle("hidden", show);
       $("recoveryFormContainer").classList.toggle("hidden", !show);
       generateCaptcha();
-    }
+    };
 
-    async function handleRecovery() {
+    window.handleRecovery = async function() {
       toast("warn", "Contact Support", "Password recovery requires admin assistance.");
-    }
+    };
 
     // Keyboard shortcuts
     document.addEventListener("keydown", (e) => {
