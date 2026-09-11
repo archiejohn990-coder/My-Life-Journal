@@ -19,7 +19,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, "public")));
 
 // ==================== MONGODB CONNECTION ====================
-const MONGO_URL = process.env.MONGO_URL || "mongodb+srv://Archie:Archie1225@cluster0.7e4s845.mongodb.net/myjournal?retryWrites=true&w=majority";
+const MONGO_URL = process.env.MONGO_URL || "mongodb+srv://Archie:Archie1225@cluster0.7e4s845.mongodb.net/?appName=Cluster0";
 
 mongoose.connect(MONGO_URL, {
     useNewUrlParser: true,
